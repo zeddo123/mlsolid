@@ -5,4 +5,4 @@ mlsolid address my issue with mlflow by being:
 0. fast
 1. production focused, and easy to deploy
 2. dumb client (the client should only send experiments and artifacts)
-3. better documentation by being not convoluted and complicated to oblivion (i.e no 1000+ options with the similar names).
+3. better documentation by being not convoluted and complicated to oblivion (i.e no 1000+ options with the same similar names).
