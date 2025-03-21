@@ -10,6 +10,10 @@ import (
 )
 
 func (c *Controller) CreateRun(ctx context.Context, run types.Run) error {
+	if c.S3 == nil {
+		return types.NewInternalErr("object store is not configured")
+	}
+
 	ok, err := c.Redis.RunExists(ctx, run.Name)
 	if err != nil {
 		return err

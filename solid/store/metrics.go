@@ -88,13 +88,13 @@ func (r *RedisStore) parseMetric(ctx context.Context, res *redis.XMessageSliceCm
 	vals := make([]any, len(msgs))
 
 	for i, m := range msgs {
-		vals[i] = m.Values["Val"]
+		vals[i] = types.ParseVal(m.Values["Val"].(string))
 	}
 
 	var g types.Metric
 
 	switch vals[0].(type) {
-	case int:
+	case int, int64, int32:
 		g = &types.GenericMetric[int64]{Key: msgs[0].Values["Name"].(string)}
 	case float32, float64:
 		g = &types.GenericMetric[float64]{Key: msgs[0].Values["Name"].(string)}
@@ -112,7 +112,7 @@ func (r *RedisStore) parseMetrics(ctx context.Context, res []*redis.XMessageSlic
 
 	for _, x := range res {
 		m, err := r.parseMetric(ctx, x)
-		if err != nil {
+		if err == nil {
 			mapping[m.Name()] = m
 		}
 	}
