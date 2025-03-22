@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/zedd123/mlsolid/solid/types"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 func (r *RedisStore) ArtifactExist(ctx context.Context, runID string, id string) error {

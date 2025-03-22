@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/zedd123/mlsolid/solid/types"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 func (r *RedisStore) SetMetrics(ctx context.Context, runID string, ms map[string]types.Metric) error {

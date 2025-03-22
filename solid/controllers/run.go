@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/zedd123/mlsolid/solid/types"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 func (c *Controller) CreateRun(ctx context.Context, run types.Run) error {
@@ -20,7 +20,7 @@ func (c *Controller) CreateRun(ctx context.Context, run types.Run) error {
 	}
 
 	if ok {
-		return types.NewBadRequest(fmt.Sprintf("run id <%s> already in use", run.Name))
+		return types.NewAlreadyInUseErr(fmt.Sprintf("run id <%s> already in use", run.Name))
 	}
 
 	err = c.Redis.SetRun(ctx, run)
@@ -54,6 +54,21 @@ func (c *Controller) Run(ctx context.Context, runID string) (*types.Run, error) 
 	}
 
 	return c.Redis.Run(ctx, id)
+}
+
+func (c *Controller) Runs(ctx context.Context, ids []string) ([]*types.Run, error) {
+	normalized := make([]string, len(ids))
+
+	for i, id := range ids {
+		normalized[i] = types.NormalizeID(id)
+	}
+
+	runs, err := c.Redis.Runs(ctx, normalized)
+	if err != nil {
+		return nil, err
+	}
+
+	return runs, nil
 }
 
 func (c *Controller) AddMetrics(ctx context.Context, runID string, m []types.Metric) error {

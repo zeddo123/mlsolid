@@ -9,6 +9,7 @@ type Metric interface {
 	ValsToCommit() []any
 	Commit()
 	LastVal() any
+	AddVal(v any)
 }
 
 type GenericMetric[T constraints.Ordered] struct {
@@ -62,6 +63,10 @@ func (s GenericMetric[T]) ValsToCommit() []any {
 
 func (s *GenericMetric[T]) Add(v T) {
 	s.unCommited = append(s.unCommited, v)
+}
+
+func (s *GenericMetric[T]) AddVal(v any) {
+	s.Add(v.(T))
 }
 
 func (s *GenericMetric[T]) UnCommited() []T {

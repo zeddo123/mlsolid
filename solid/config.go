@@ -5,6 +5,8 @@ import "github.com/spf13/viper"
 type Config struct {
 	Prod bool `mapstructure:"PROD"`
 
+	GrpcPort string `mapstructure:"GRPC_PORT"`
+
 	RedisAddr     string `mapstructure:"REDIS_ADDR"`
 	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
 	RedisDB       int    `mapstructure:"REDIS_DB"`
@@ -22,6 +24,8 @@ func LoadConfig(path string) (Config, error) {
 	viper.SetConfigName("yaml")
 
 	viper.SetDefault("PROD", "true")
+
+	viper.SetDefault("GRPC_PORT", "5000")
 
 	viper.SetDefault("REDIS_ADDR", "redis:6379")
 	viper.SetDefault("REDIS_PASSWORD", "")

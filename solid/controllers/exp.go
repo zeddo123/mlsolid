@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 
-	"github.com/zedd123/mlsolid/solid/types"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 func (c *Controller) Exp(ctx context.Context, expID string) (*types.Experiment, error) {
@@ -12,4 +12,8 @@ func (c *Controller) Exp(ctx context.Context, expID string) (*types.Experiment, 
 
 func (c *Controller) ExpRuns(ctx context.Context, expID string) ([]string, error) {
 	return c.Redis.ExpRunIDs(ctx, expID)
+}
+
+func (c *Controller) Exps(ctx context.Context) ([]string, error) {
+	return c.Redis.Exps(ctx)
 }

@@ -8,10 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zedd123/mlsolid/solid/controllers"
-	"github.com/zedd123/mlsolid/solid/s3"
-	"github.com/zedd123/mlsolid/solid/store"
-	"github.com/zedd123/mlsolid/solid/types"
+	"github.com/zeddo123/mlsolid/solid/controllers"
+	"github.com/zeddo123/mlsolid/solid/s3"
+	"github.com/zeddo123/mlsolid/solid/store"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 func TestRunFlow(t *testing.T) {

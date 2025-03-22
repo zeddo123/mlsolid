@@ -2,9 +2,10 @@ package store
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/zedd123/mlsolid/solid/types"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 func (r *RedisStore) Exp(ctx context.Context, expID string) (*types.Experiment, error) {
@@ -61,4 +62,24 @@ func (r *RedisStore) ExpExists(ctx context.Context, expID string) error {
 	}
 
 	return nil
+}
+
+func (r *RedisStore) Exps(ctx context.Context) ([]string, error) {
+	keys, err := r.scanKeys(ctx, "exp:*")
+	if err != nil {
+		return nil, types.NewInternalErr("could not fetch experiments")
+	}
+
+	ids := make([]string, len(keys))
+
+	for i, key := range keys {
+		var id string
+
+		_, err := fmt.Sscanf(key, "exp:%s", &id)
+		if err == nil {
+			ids[i] = id
+		}
+	}
+
+	return ids, nil
 }

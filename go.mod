@@ -1,8 +1,9 @@
-module github.com/zedd123/mlsolid
+module github.com/zeddo123/mlsolid
 
 go 1.24.1
 
 require (
+	connectrpc.com/connect v1.18.1
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.9
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.62
@@ -13,6 +14,8 @@ require (
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/redis v0.35.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
+	google.golang.org/grpc v1.67.3
+	google.golang.org/protobuf v1.36.1
 )
 
 require (
@@ -87,7 +90,9 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

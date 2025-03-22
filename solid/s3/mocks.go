@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/zedd123/mlsolid/solid/types"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 type MockObjectStore struct{}

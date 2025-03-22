@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"github.com/zedd123/mlsolid/solid/s3"
-	"github.com/zedd123/mlsolid/solid/store"
+	"github.com/zeddo123/mlsolid/solid/s3"
+	"github.com/zeddo123/mlsolid/solid/store"
 )
 
 type Controller struct {
