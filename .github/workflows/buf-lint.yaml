@@ -1,9 +1,13 @@
-on: pull_request # Apply to all pull requests
+name: Buf CI Lint
+
+on: 
+  push:
+  pull_request:
+
 jobs:
   lint-protos:
-    # Run `git checkout`
-    - uses: actions/checkout@v4
-    # Install the `buf` CLI
-    - uses: bufbuild/buf-setup-action@v1
-    # Lint your Protobuf sources
-    - uses: bufbuild/buf-lint-action@v1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1
+      - uses: bufbuild/buf-lint-action@v1
