@@ -17,3 +17,4 @@ jobs:
           # Change setup_only to true if you only want to set up the Action and not execute other commands.
           # Otherwise, you can delete this line--the default is false.
           setup_only: false
+          token: ${{ secrets.BUF_TOKEN }}
