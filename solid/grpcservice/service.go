@@ -1,7 +1,9 @@
 package grpcservice
 
 import (
+	"bytes"
 	"context"
+	"io"
 
 	"github.com/zeddo123/mlsolid/solid/controllers"
 	mlsolidv1 "github.com/zeddo123/mlsolid/solid/gen/mlsolid/v1"
@@ -81,9 +83,63 @@ func (s *Service) AddMetrics(ctx context.Context, req *mlsolidv1.AddMetricsReque
 		return nil, ParseError(err)
 	}
 
-	return &mlsolidv1.AddMetricsResponse{}, nil
+	return &mlsolidv1.AddMetricsResponse{Added: true}, nil
 }
 
-func (s *Service) AddArtifacts(ctx context.Context, req *mlsolidv1.AddArtifactsRequest) (*mlsolidv1.AddArtifactsResponse, error) {
-	return nil, nil
+func (s *Service) AddArtifact(stream mlsolidv1.Mlsolid_AddArtifactServer) error {
+	buf := bytes.Buffer{}
+	var contentType string
+	var artifactName string
+	var runID string
+
+	for {
+		request, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		switch request.Request.(type) {
+		case *mlsolidv1.AddArtifactRequest_Metadata:
+			metadata, ok := request.Request.(*mlsolidv1.AddArtifactRequest_Metadata)
+			if !ok {
+				return status.Errorf(codes.InvalidArgument, "could not read metadata")
+			}
+
+			runID = metadata.Metadata.RunId
+			artifactName = metadata.Metadata.Name
+
+			contentType = metadata.Metadata.Type
+			if !types.IsValidContentType(contentType) {
+				return status.Error(codes.InvalidArgument, "unknown content type for artifact")
+			}
+
+		case *mlsolidv1.AddArtifactRequest_Content:
+			content, ok := request.Request.(*mlsolidv1.AddArtifactRequest_Content)
+			if !ok {
+				break
+			}
+
+			_, err = buf.Write(content.Content.Content)
+			if err != nil {
+				return status.Errorf(codes.Internal, "could not write data chunk %v", err)
+			}
+		}
+
+	}
+
+	artifact, err := types.NewArtifact(artifactName, contentType, buf.Bytes())
+	if err != nil {
+		return ParseError(err)
+	}
+
+	err = s.Controller.AddArtifacts(stream.Context(), runID, []types.Artifact{artifact})
+	if err != nil {
+		return ParseError(err)
+	}
+
+	return stream.SendAndClose(&mlsolidv1.AddArtifactResponse{
+		Name:   artifactName,
+		Status: mlsolidv1.Status_SUCCESS,
+		Size:   uint64(buf.Len()),
+	})
 }

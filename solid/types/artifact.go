@@ -29,6 +29,28 @@ type SavedArtifact struct {
 	S3Key       string
 }
 
+func NewArtifact(name string, contentType string, content []byte) (Artifact, error) {
+	if !IsValidContentType(contentType) {
+		return nil, NewInvalidInputErr("unknown content type for artifact")
+	}
+
+	switch ContentType(contentType) {
+	case TextContentType:
+		return PlainTextArtifact{
+			FileName:    name,
+			FileContent: string(content),
+		}, nil
+
+	case ModelContentType:
+		return CheckpointArtifact{
+			Model:      name,
+			Checkpoint: content,
+		}, nil
+	}
+
+	return nil, NewInternalErr("could not create artifact")
+}
+
 func (p PlainTextArtifact) Name() string {
 	return p.FileName
 }
@@ -71,4 +93,8 @@ func ArtifactIdMap(artifacts []Artifact) map[string]Artifact {
 	}
 
 	return mapping
+}
+
+func IsValidContentType(contentType string) bool {
+	return contentType == string(TextContentType) || contentType == string(ModelContentType)
 }
