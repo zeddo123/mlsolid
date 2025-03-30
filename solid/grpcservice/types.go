@@ -3,7 +3,7 @@ package grpcservice
 import (
 	"errors"
 
-	mlsolidv1 "github.com/zeddo123/mlsolid/solid/gen/mlsolid/v1"
+	mlsolidv1 "buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go/mlsolid/v1"
 	"github.com/zeddo123/mlsolid/solid/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -5,10 +5,10 @@ import (
 	"log"
 	"net"
 
+	mlsolidv1grpc "buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
 	"github.com/redis/go-redis/v9"
 	"github.com/zeddo123/mlsolid/solid"
 	"github.com/zeddo123/mlsolid/solid/controllers"
-	mlsolidv1 "github.com/zeddo123/mlsolid/solid/gen/mlsolid/v1"
 	"github.com/zeddo123/mlsolid/solid/grpcservice"
 	"github.com/zeddo123/mlsolid/solid/store"
 	"google.golang.org/grpc"
@@ -43,7 +43,7 @@ func main() {
 
 	server := grpc.NewServer()
 
-	mlsolidv1.RegisterMlsolidServer(server, &service)
+	mlsolidv1grpc.RegisterMlsolidServer(server, &service)
 
 	log.Println("gRPC server started at", config.GrpcPort)
 

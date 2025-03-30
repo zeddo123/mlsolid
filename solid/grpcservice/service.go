@@ -5,8 +5,9 @@ import (
 	"context"
 	"io"
 
+	mlsolidv1grpc "buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
+	mlsolidv1 "buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go/mlsolid/v1"
 	"github.com/zeddo123/mlsolid/solid/controllers"
-	mlsolidv1 "github.com/zeddo123/mlsolid/solid/gen/mlsolid/v1"
 	"github.com/zeddo123/mlsolid/solid/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,7 +15,7 @@ import (
 )
 
 type Service struct {
-	mlsolidv1.UnimplementedMlsolidServer
+	mlsolidv1grpc.UnimplementedMlsolidServer
 	Controller controllers.Controller
 }
 
@@ -86,7 +87,7 @@ func (s *Service) AddMetrics(ctx context.Context, req *mlsolidv1.AddMetricsReque
 	return &mlsolidv1.AddMetricsResponse{Added: true}, nil
 }
 
-func (s *Service) AddArtifact(stream mlsolidv1.Mlsolid_AddArtifactServer) error {
+func (s *Service) AddArtifact(stream mlsolidv1grpc.Mlsolid_AddArtifactServer) error {
 	buf := bytes.Buffer{}
 	var contentType string
 	var artifactName string
