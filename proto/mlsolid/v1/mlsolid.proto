@@ -5,10 +5,11 @@ package mlsolid.v1;
 import "google/protobuf/timestamp.proto";
 
 enum Status {
-    PENDING = 0;
-    PROGRESS = 1;
-    SUCCESS = 2;
-    FAILED = 3;
+    STATUS_UNSPECIFIED = 0;
+    STATUS_PENDING = 1;
+    STATUS_PROGRESS = 2;
+    STATUS_SUCCESS = 3;
+    STATUS_FAILED = 4;
 }
 
 message Val {
@@ -29,7 +30,7 @@ message Content {
     bytes content = 1;
 }
 
-service Mlsolid {
+service MlsolidService {
 	rpc Experiments(ExperimentsRequest) returns (ExperimentsResponse);
 	rpc Experiment(ExperimentRequest) returns (ExperimentResponse);
 	rpc CreateRun(CreateRunRequest) returns (CreateRunResponse);
