@@ -7,6 +7,7 @@ import (
 
 func normalizeName(name string) string {
 	trimmed := strings.Join(strings.Fields(name), "-")
+
 	return strings.ToLower(trimmed)
 }
 

@@ -75,7 +75,7 @@ func (c CheckpointArtifact) ContentType() ContentType {
 	return ModelContentType
 }
 
-func ArtifactIds(artifacts []Artifact) []string {
+func ArtifactIDs(artifacts []Artifact) []string {
 	ids := make([]string, len(artifacts))
 
 	for i, a := range artifacts {
@@ -85,7 +85,7 @@ func ArtifactIds(artifacts []Artifact) []string {
 	return ids
 }
 
-func ArtifactIdMap(artifacts []Artifact) map[string]Artifact {
+func ArtifactIDMap(artifacts []Artifact) map[string]Artifact {
 	mapping := make(map[string]Artifact, len(artifacts))
 
 	for _, a := range artifacts {

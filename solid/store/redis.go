@@ -22,6 +22,8 @@ const (
 	// Example
 	// artifact:logs:linear-regression
 	ArtifactKeyPattern = "artifact:%s:%s"
+
+	TransactionMaxTries = 10
 )
 
 type RedisStore struct {
@@ -46,7 +48,7 @@ func (r *RedisStore) makeArtifactKey(name string, runID string) string {
 
 // runTx runs a transaction function with an optimistic locks on the keys passed as argument.
 func (r *RedisStore) runTx(ctx context.Context, fn func(tx *redis.Tx) error,
-	maxRetries int, keys ...string, //nolint: unparam
+	maxRetries int, keys ...string,
 ) error {
 	for range maxRetries {
 		err := r.Client.Watch(ctx, fn, keys...)

@@ -13,8 +13,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/zeddo123/mlsolid/solid/types"
-	t "github.com/zeddo123/mlsolid/solid/types"
 )
+
+const IDByteSize = 6
 
 type ObjectStore interface {
 	UploadFile(ctx context.Context, key string, body io.Reader) (string, error)
@@ -100,7 +101,7 @@ func (s Store) UploadArtifacts(ctx context.Context, as []types.Artifact) ([]type
 
 func (s Store) UploadFile(ctx context.Context, key string, body io.Reader) (string, error) {
 	if s.client == nil {
-		return "", t.ErrNotInitialized
+		return "", types.ErrNotInitialized
 	}
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
@@ -118,7 +119,7 @@ func (s Store) UploadFile(ctx context.Context, key string, body io.Reader) (stri
 // DownloadFile
 func (s Store) DownloadFile(ctx context.Context, key string) (io.ReadCloser, error) {
 	if s.client == nil {
-		return nil, t.ErrNotInitialized
+		return nil, types.ErrNotInitialized
 	}
 
 	obj, err := s.client.GetObject(ctx, &s3.GetObjectInput{
@@ -133,7 +134,7 @@ func (s Store) DownloadFile(ctx context.Context, key string) (io.ReadCloser, err
 }
 
 func (s *Store) GenerateKey(name string) string {
-	r, err := generateID(6)
+	r, err := generateID(IDByteSize)
 	if err != nil {
 		panic(err)
 	}

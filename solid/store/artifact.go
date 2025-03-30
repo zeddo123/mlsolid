@@ -61,7 +61,7 @@ func (r *RedisStore) SetArtifacts(ctx context.Context, runID string, as []types.
 
 func (r *RedisStore) setArtifact(ctx context.Context, p redis.Pipeliner,
 	runID string, a types.SavedArtifact,
-) *redis.IntCmd {
+) *redis.IntCmd { //nolint: unparam
 	return p.HSet(ctx, r.makeArtifactKey(a.Name, runID), map[string]string{
 		"Name":  a.Name,
 		"Type":  string(a.ContentType),
@@ -79,6 +79,7 @@ func (r *RedisStore) Artifacts(ctx context.Context, runID string) (map[string]ty
 
 	_, err = r.Client.Pipelined(ctx, func(p redis.Pipeliner) error {
 		cmds = r.artifacts(ctx, p, keys)
+
 		return nil
 	})
 	if err != nil {
@@ -125,7 +126,9 @@ func (r *RedisStore) Artifact(ctx context.Context, runID string, id string) (typ
 	}, nil
 }
 
-func (r *RedisStore) artifact(ctx context.Context, p redis.Pipeliner, runID string, id string) *redis.MapStringStringCmd {
+func (r *RedisStore) artifact(ctx context.Context, p redis.Pipeliner,
+	runID string, id string,
+) *redis.MapStringStringCmd {
 	return p.HGetAll(ctx, r.makeArtifactKey(id, runID))
 }
 

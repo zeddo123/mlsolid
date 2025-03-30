@@ -20,10 +20,11 @@ func (r *RedisStore) SetRun(ctx context.Context, run types.Run) error {
 
 			return nil
 		})
+
 		return err
 	}
 
-	return r.runTx(ctx, fn, 10, key)
+	return r.runTx(ctx, fn, TransactionMaxTries, key)
 }
 
 func (r *RedisStore) RunExists(ctx context.Context, runID string) (bool, error) {
@@ -58,7 +59,9 @@ func (r *RedisStore) Run(ctx context.Context, id string) (*types.Run, error) {
 	return r.parseRun(ctx, hashRes, metricsRes)
 }
 
-func (r *RedisStore) parseRun(ctx context.Context, hashRes *redis.MapStringStringCmd, metricsRes []*redis.XMessageSliceCmd) (*types.Run, error) {
+func (r *RedisStore) parseRun(ctx context.Context, hashRes *redis.MapStringStringCmd,
+	metricsRes []*redis.XMessageSliceCmd,
+) (*types.Run, error) {
 	metrics, err := r.parseMetrics(ctx, metricsRes)
 	if err != nil {
 		return nil, types.NewInternalErr("could not parse metrics")
@@ -111,6 +114,7 @@ func (r *RedisStore) Runs(ctx context.Context, ids []string) ([]*types.Run, erro
 	}
 
 	runs := make([]*types.Run, 0)
+
 	for _, v := range res {
 		run, err := r.parseRun(ctx, v.Hash, v.Metrics)
 		if err == nil {

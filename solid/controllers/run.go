@@ -96,22 +96,22 @@ func (c *Controller) AddMetrics(ctx context.Context, runID string, m []types.Met
 }
 
 func (c *Controller) AddArtifacts(ctx context.Context, runID string, as []types.Artifact) error {
-	ids := types.ArtifactIds(as)
-	artifactsMap := types.ArtifactIdMap(as)
+	ids := types.ArtifactIDs(as)
+	artifactsMap := types.ArtifactIDMap(as)
 
 	errs := c.Redis.ArtifactsExist(ctx, runID, ids)
 
-	to_upload := make([]types.Artifact, 0, len(as))
+	toUpload := make([]types.Artifact, 0, len(as))
 
 	for id, err := range errs {
 		if errors.Is(err, types.ErrNotFound) {
-			to_upload = append(to_upload, artifactsMap[id])
+			toUpload = append(toUpload, artifactsMap[id])
 		} else if err != nil {
 			return err
 		}
 	}
 
-	artifacts, uploadErr := c.S3.UploadArtifacts(ctx, to_upload)
+	artifacts, uploadErr := c.S3.UploadArtifacts(ctx, toUpload)
 
 	err := c.Redis.SetArtifacts(ctx, runID, artifacts)
 	if err != nil {

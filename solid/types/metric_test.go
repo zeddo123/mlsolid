@@ -8,7 +8,7 @@ import (
 )
 
 func TestGenericMetric(t *testing.T) {
-	t.Run("only_new_values_are_uncommited", func(t *testing.T) {
+	t.Run("only_new_values_are_uncommitted", func(t *testing.T) {
 		m := types.GenericMetric[string]{
 			Key:    "paths",
 			Values: []string{"path1", "path2"},

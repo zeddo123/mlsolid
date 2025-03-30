@@ -19,7 +19,9 @@ type Service struct {
 	Controller controllers.Controller
 }
 
-func (s *Service) Experiments(ctx context.Context, req *mlsolidv1.ExperimentsRequest) (*mlsolidv1.ExperimentsResponse, error) {
+func (s *Service) Experiments(ctx context.Context,
+	_ *mlsolidv1.ExperimentsRequest,
+) (*mlsolidv1.ExperimentsResponse, error) {
 	ids, err := s.Controller.Exps(ctx)
 	if err != nil {
 		return nil, ParseError(err)
@@ -28,7 +30,9 @@ func (s *Service) Experiments(ctx context.Context, req *mlsolidv1.ExperimentsReq
 	return &mlsolidv1.ExperimentsResponse{ExpIds: ids}, nil
 }
 
-func (s *Service) CreateRun(ctx context.Context, req *mlsolidv1.CreateRunRequest) (*mlsolidv1.CreateRunResponse, error) {
+func (s *Service) CreateRun(ctx context.Context,
+	req *mlsolidv1.CreateRunRequest,
+) (*mlsolidv1.CreateRunResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
@@ -74,7 +78,9 @@ func (s *Service) Runs(ctx context.Context, req *mlsolidv1.RunsRequest) (*mlsoli
 	return NewRunsResponse(runs), nil
 }
 
-func (s *Service) AddMetrics(ctx context.Context, req *mlsolidv1.AddMetricsRequest) (*mlsolidv1.AddMetricsResponse, error) {
+func (s *Service) AddMetrics(ctx context.Context,
+	req *mlsolidv1.AddMetricsRequest,
+) (*mlsolidv1.AddMetricsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
@@ -87,10 +93,13 @@ func (s *Service) AddMetrics(ctx context.Context, req *mlsolidv1.AddMetricsReque
 	return &mlsolidv1.AddMetricsResponse{Added: true}, nil
 }
 
-func (s *Service) AddArtifact(stream mlsolidv1grpc.Mlsolid_AddArtifactServer) error {
+func (s *Service) AddArtifact(stream mlsolidv1grpc.Mlsolid_AddArtifactServer) error { //nolint: cyclop
 	buf := bytes.Buffer{}
+
 	var contentType string
+
 	var artifactName string
+
 	var runID string
 
 	for {
@@ -125,7 +134,6 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.Mlsolid_AddArtifactServer) er
 				return status.Errorf(codes.Internal, "could not write data chunk %v", err)
 			}
 		}
-
 	}
 
 	artifact, err := types.NewArtifact(artifactName, contentType, buf.Bytes())
@@ -141,6 +149,6 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.Mlsolid_AddArtifactServer) er
 	return stream.SendAndClose(&mlsolidv1.AddArtifactResponse{
 		Name:   artifactName,
 		Status: mlsolidv1.Status_SUCCESS,
-		Size:   uint64(buf.Len()),
+		Size:   uint64(buf.Len()), //nolint: gosec
 	})
 }

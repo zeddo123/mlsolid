@@ -42,7 +42,9 @@ func (r *RedisStore) Metrics(ctx context.Context, runID string) ([]types.Metric,
 	return nil, nil
 }
 
-func (r *RedisStore) setMetrics(ctx context.Context, p redis.Pipeliner, runID string, ms map[string]types.Metric) map[string][]*redis.StringCmd {
+func (r *RedisStore) setMetrics(ctx context.Context, p redis.Pipeliner,
+	runID string, ms map[string]types.Metric,
+) map[string][]*redis.StringCmd {
 	res := make(map[string][]*redis.StringCmd, 0)
 
 	for key, val := range ms {
@@ -52,7 +54,9 @@ func (r *RedisStore) setMetrics(ctx context.Context, p redis.Pipeliner, runID st
 	return res
 }
 
-func (r *RedisStore) setMetric(ctx context.Context, p redis.Pipeliner, runID string, m types.Metric) []*redis.StringCmd {
+func (r *RedisStore) setMetric(ctx context.Context, p redis.Pipeliner,
+	runID string, m types.Metric,
+) []*redis.StringCmd {
 	key := r.makeMetricKey(m.Name(), runID)
 	cmds := make([]*redis.StringCmd, 0)
 
