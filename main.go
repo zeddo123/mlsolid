@@ -43,7 +43,7 @@ func main() {
 
 	server := grpc.NewServer()
 
-	mlsolidv1grpc.RegisterMlsolidServer(server, &service)
+	mlsolidv1grpc.RegisterMlsolidServiceServer(server, &service)
 
 	log.Println("gRPC server started at", config.GrpcPort)
 

@@ -15,7 +15,7 @@ import (
 )
 
 type Service struct {
-	mlsolidv1grpc.UnimplementedMlsolidServer
+	mlsolidv1grpc.UnimplementedMlsolidServiceServer
 	Controller controllers.Controller
 }
 
@@ -93,7 +93,7 @@ func (s *Service) AddMetrics(ctx context.Context,
 	return &mlsolidv1.AddMetricsResponse{Added: true}, nil
 }
 
-func (s *Service) AddArtifact(stream mlsolidv1grpc.Mlsolid_AddArtifactServer) error { //nolint: cyclop
+func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactServer) error { //nolint: cyclop
 	buf := bytes.Buffer{}
 
 	var contentType string
