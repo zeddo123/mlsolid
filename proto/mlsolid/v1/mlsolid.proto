@@ -5,114 +5,114 @@ package mlsolid.v1;
 import "google/protobuf/timestamp.proto";
 
 enum Status {
-    STATUS_UNSPECIFIED = 0;
-    STATUS_PENDING = 1;
-    STATUS_PROGRESS = 2;
-    STATUS_SUCCESS = 3;
-    STATUS_FAILED = 4;
+  STATUS_UNSPECIFIED = 0;
+  STATUS_PENDING = 1;
+  STATUS_PROGRESS = 2;
+  STATUS_SUCCESS = 3;
+  STATUS_FAILED = 4;
 }
 
 message Val {
-	oneof val {
-		int64 int = 2;
-		double double = 3;
-		string str = 4;
-	}
+  oneof val {
+    int64 int = 2;
+    double double = 3;
+    string str = 4;
+  }
 }
 
 message MetaData {
-    string name = 1;
-    string type = 2;
-    string run_id = 3;
+  string name = 1;
+  string type = 2;
+  string run_id = 3;
 }
 
 message Content {
-    bytes content = 1;
+  bytes content = 1;
 }
 
 service MlsolidService {
-	rpc Experiments(ExperimentsRequest) returns (ExperimentsResponse);
-	rpc Experiment(ExperimentRequest) returns (ExperimentResponse);
-	rpc CreateRun(CreateRunRequest) returns (CreateRunResponse);
-	rpc Run(RunRequest) returns (RunResponse);
-	rpc Runs(RunsRequest) returns (RunsResponse);
-	rpc AddMetrics(AddMetricsRequest) returns (AddMetricsResponse);
-	rpc AddArtifact(stream AddArtifactRequest) returns (AddArtifactResponse);
+  rpc Experiments(ExperimentsRequest) returns (ExperimentsResponse);
+  rpc Experiment(ExperimentRequest) returns (ExperimentResponse);
+  rpc CreateRun(CreateRunRequest) returns (CreateRunResponse);
+  rpc Run(RunRequest) returns (RunResponse);
+  rpc Runs(RunsRequest) returns (RunsResponse);
+  rpc AddMetrics(AddMetricsRequest) returns (AddMetricsResponse);
+  rpc AddArtifact(stream AddArtifactRequest) returns (AddArtifactResponse);
 }
 
 message Metric {
-	string name = 1;
-	repeated Val vals = 2;
+  string name = 1;
+  repeated Val vals = 2;
 }
 
 message Run {
-	string run_id = 1;
-	google.protobuf.Timestamp timestamp = 2;
-	string experiment_id = 3;
-	map<string, Metric> metrics = 4;
+  string run_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string experiment_id = 3;
+  map<string, Metric> metrics = 4;
 }
 
 message ExperimentsRequest {}
 
 message ExperimentsResponse {
-	repeated string exp_ids = 1;
+  repeated string exp_ids = 1;
 }
 
 message ExperimentRequest {
-	string exp_id = 1;
+  string exp_id = 1;
 }
 
 message ExperimentResponse {
-	repeated string run_ids = 1;
+  repeated string run_ids = 1;
 }
 
 message CreateRunRequest {
-	string run_id = 1;
-	string experiment_id = 2;
+  string run_id = 1;
+  string experiment_id = 2;
 }
 
 message CreateRunResponse {
-	string run_id = 1;
+  string run_id = 1;
 }
 
 message RunRequest {
-	string run_id = 1;
+  string run_id = 1;
 }
 
 message RunResponse {
-	string run_id = 1;
-	google.protobuf.Timestamp timestamp = 2;
-	string experiment_id = 3;
-	map<string, Metric> metrics = 4;
+  string run_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string experiment_id = 3;
+  map<string, Metric> metrics = 4;
 }
 
 message RunsRequest {
-	repeated string run_ids = 1;
+  repeated string run_ids = 1;
 }
 
 message RunsResponse {
-	repeated Run runs = 1;
+  repeated Run runs = 1;
 }
 
 message AddMetricsRequest {
-	string run_id = 1;
-	repeated Metric metrics = 2;
+  string run_id = 1;
+  repeated Metric metrics = 2;
 }
 
-message AddMetricsResponse{
-    bool added = 1;
+message AddMetricsResponse {
+  bool added = 1;
 }
 
-message AddArtifactRequest{
-    oneof request {
-      MetaData metadata = 1;
-      Content content = 2;
-    }
+message AddArtifactRequest {
+  oneof request {
+    MetaData metadata = 1;
+    Content content = 2;
+  }
 }
 
-message AddArtifactResponse{
-    string name = 1;
-    Status status = 2;
-    uint64 size = 3;
-    string s3_url = 4;
+message AddArtifactResponse {
+  string name = 1;
+  Status status = 2;
+  uint64 size = 3;
+  string s3_url = 4;
 }
