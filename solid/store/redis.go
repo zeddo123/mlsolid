@@ -75,7 +75,7 @@ func (r *RedisStore) scanKeys(ctx context.Context, pattern string) ([]string, er
 		keys = append(keys, iter.Val())
 	}
 
-	if err := iter.Err(); err != nil {
+	if err := iter.Err(); err != redis.Nil && err != nil {
 		return nil, types.NewInternalErr("could not retrieve keys")
 	}
 

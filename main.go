@@ -20,7 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("mlsolid", config)
+	fmt.Println("loaded config", config)
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     config.RedisAddr,
