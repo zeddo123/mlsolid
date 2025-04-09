@@ -102,14 +102,19 @@ func parseGrpcMetric(ms []*mlsolidv1.Metric) []types.Metric {
 		switch m.Vals[0].GetVal().(type) {
 		case *mlsolidv1.Val_Str:
 			metric = types.NewGenericMetric[string](m.Name, len(m.Vals))
+			for _, val := range m.Vals {
+				metric.AddVal(val.GetStr())
+			}
 		case *mlsolidv1.Val_Double:
 			metric = types.NewGenericMetric[float64](m.Name, len(m.Vals))
+			for _, val := range m.Vals {
+				metric.AddVal(val.GetDouble())
+			}
 		case *mlsolidv1.Val_Int:
 			metric = types.NewGenericMetric[int64](m.Name, len(m.Vals))
-		}
-
-		for _, val := range m.Vals {
-			metric.AddVal(val.GetVal())
+			for _, val := range m.Vals {
+				metric.AddVal(val.GetInt())
+			}
 		}
 
 		metrics[i] = metric

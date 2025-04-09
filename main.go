@@ -10,6 +10,7 @@ import (
 	"github.com/zeddo123/mlsolid/solid"
 	"github.com/zeddo123/mlsolid/solid/controllers"
 	"github.com/zeddo123/mlsolid/solid/grpcservice"
+	"github.com/zeddo123/mlsolid/solid/s3"
 	"github.com/zeddo123/mlsolid/solid/store"
 	"google.golang.org/grpc"
 )
@@ -28,9 +29,20 @@ func main() {
 		DB:       config.RedisDB,
 	})
 
+	objectStore, err := s3.NewStore(s3.StoreOps{
+		Bucket:          config.S3Bucket,
+		Endpoint:        config.S3Endpoint,
+		AccessKey:       config.S3Key,
+		SecretAccessKey: config.S3Secret,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	service := grpcservice.Service{
 		Controller: controllers.Controller{
 			Redis: store.RedisStore{Client: *redisClient},
+			S3:    objectStore,
 		},
 	}
 
