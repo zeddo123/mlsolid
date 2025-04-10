@@ -19,6 +19,21 @@ type Service struct {
 	Controller controllers.Controller
 }
 
+func (s *Service) Experiment(ctx context.Context,
+	req *mlsolidv1.ExperimentRequest,
+) (*mlsolidv1.ExperimentResponse, error) {
+	id := req.GetExpId()
+
+	runIDs, err := s.Controller.ExpRuns(ctx, id)
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	return &mlsolidv1.ExperimentResponse{
+		RunIds: runIDs,
+	}, nil
+}
+
 func (s *Service) Experiments(ctx context.Context,
 	_ *mlsolidv1.ExperimentsRequest,
 ) (*mlsolidv1.ExperimentsResponse, error) {
