@@ -34,10 +34,6 @@ func (r *RedisStore) RunMetrics(ctx context.Context, runID string) ([]string, er
 	return r.scanKeys(ctx, pattern)
 }
 
-func (r *RedisStore) runMetrics(ctx context.Context, p redis.Pipeliner, runID string) *redis.ScanCmd {
-	return p.Scan(ctx, 0, fmt.Sprintf("metric:*:%s", runID), 0)
-}
-
 func (r *RedisStore) Metrics(ctx context.Context, runID string) ([]types.Metric, error) {
 	return nil, nil
 }

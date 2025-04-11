@@ -81,17 +81,3 @@ func (r *RedisStore) scanKeys(ctx context.Context, pattern string) ([]string, er
 
 	return keys, nil
 }
-
-func (r *RedisStore) iterate(ctx context.Context, iter *redis.ScanIterator) ([]string, error) {
-	vals := make([]string, 0)
-
-	for iter.Next(ctx) {
-		vals = append(vals, iter.Val())
-	}
-
-	if err := iter.Err(); err != nil {
-		return nil, types.NewInternalErr("could not retrieve keys")
-	}
-
-	return vals, nil
-}

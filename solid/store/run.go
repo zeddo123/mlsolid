@@ -125,28 +125,17 @@ func (r *RedisStore) Runs(ctx context.Context, ids []string) ([]*types.Run, erro
 	return runs, nil
 }
 
+// pullRunMetricKeys fetchs the redis metric keys of the run ids passed as argument.
 func (r *RedisStore) pullRunMetricKeys(ctx context.Context, ids []string) (map[string][]string, error) {
-	p := r.Client.Pipeline()
+	keys := make(map[string][]string, len(ids))
 
-	cmds := make([]*redis.ScanCmd, len(ids))
-	for i, id := range ids {
-		cmds[i] = r.runMetrics(ctx, p, id)
-	}
-
-	_, err := p.Exec(ctx)
-	if err != nil {
-		return nil, types.NewInternalErr("could not pull metrics")
-	}
-
-	keys := make(map[string][]string)
-
-	for i, cmd := range cmds {
-		ks, err := r.iterate(ctx, cmd.Iterator())
+	for _, id := range ids {
+		metricsKeys, err := r.RunMetrics(ctx, id)
 		if err != nil {
-			continue
+			return nil, err
 		}
 
-		keys[ids[i]] = ks
+		keys[id] = metricsKeys
 	}
 
 	return keys, nil
