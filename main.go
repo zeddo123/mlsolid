@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -28,6 +29,11 @@ func main() {
 		Password: config.RedisPassword,
 		DB:       config.RedisDB,
 	})
+
+	err = redisClient.Ping(context.Background()).Err()
+	if err != nil {
+		panic(err)
+	}
 
 	objectStore, err := s3.NewStore(s3.StoreOps{
 		Bucket:          config.S3Bucket,
