@@ -29,6 +29,10 @@ func (m ModelRegistry) LatestVersion() int {
 	return len(m.models)
 }
 
+func (m ModelRegistry) LastModel() ModelEntry {
+	return m.models[len(m.models)-1]
+}
+
 func (m ModelRegistry) ModelByTag(tag string) (ModelEntry, error) {
 	versions, ok := m.tags[tag]
 	if !ok {
