@@ -63,3 +63,30 @@ func TestRunFlow(t *testing.T) {
 	assert.Equal(t, 0.92, savedRun.Metrics["acc"].LastVal())
 	assert.Equal(t, "huge", savedRun.Metrics["model_size"].LastVal())
 }
+
+func TestModelRegistryFlow(t *testing.T) {
+	// Arrange
+	controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: s3.MockObjectStore{}}
+
+	run := types.NewRun("run2", "exp2")
+	artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: []byte{1, 2, 3}}
+
+	// Act
+	err := controller.CreateRun(context.Background(), run)
+	require.NoError(t, err)
+
+	err = controller.AddArtifacts(context.Background(), "run2", []types.Artifact{artifact})
+	require.NoError(t, err)
+
+	err = controller.CreateModelRegistry(context.Background(), "exp2-registry")
+	require.NoError(t, err)
+
+	err = controller.AddArtifactToRegistry(context.Background(), "exp2-registry", "run2", "model_path.pt", "prod")
+	require.NoError(t, err)
+
+	// Assert
+	_, err = controller.TaggedModel(context.Background(), "exp2-registry", "prod")
+	assert.NoError(t, err)
+	_, err = controller.LastModelEntry(context.Background(), "exp2-registry")
+	assert.NoError(t, err)
+}
