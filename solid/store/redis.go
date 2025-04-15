@@ -23,6 +23,20 @@ const (
 	// artifact:logs:linear-regression
 	ArtifactKeyPattern = "artifact:%s:%s"
 
+	ModelRegistryInfoKeyPattern = "info:registry:%s"
+	// ModelRegistryKeyPattern pattern a model registry key
+	// Example
+	// registry:yolov12
+	ModelRegistryKeyPattern = "registry:%s"
+	// ModelRegistryTagsKeyPattern pattern a model registry's tags
+	// Example
+	// tag:registry:yolov12 -> [prod, latest, ...]
+	ModelRegistryTagsKeyPattern = "tag:registry:%s"
+	// ModelRegistryTagKeyPattern pattern a model registry tag
+	// Example
+	// tag:registry:yolov12:prod
+	ModelRegistryTagKeyPattern = "tag:registry:%s:%s"
+
 	TransactionMaxTries = 10
 )
 
@@ -44,6 +58,22 @@ func (r *RedisStore) makeMetricKey(name string, runID string) string {
 
 func (r *RedisStore) makeArtifactKey(name string, runID string) string {
 	return fmt.Sprintf(ArtifactKeyPattern, name, runID)
+}
+
+func (r *RedisStore) makeModelRegistryKey(name string) string {
+	return fmt.Sprintf(ModelRegistryKeyPattern, name)
+}
+
+func (r *RedisStore) makeModelRegistryInfoKey(name string) string {
+	return fmt.Sprintf(ModelRegistryInfoKeyPattern, name)
+}
+
+func (r *RedisStore) makeModelRegistryTagsKey(name string) string {
+	return fmt.Sprintf(ModelRegistryTagsKeyPattern, name)
+}
+
+func (r *RedisStore) makeModelRegistryTagKey(name, tag string) string {
+	return fmt.Sprintf(ModelRegistryTagKeyPattern, name, tag)
 }
 
 // runTx runs a transaction function with an optimistic locks on the keys passed as argument.
