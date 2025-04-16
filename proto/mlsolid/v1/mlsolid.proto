@@ -38,7 +38,7 @@ service MlsolidService {
   rpc Runs(RunsRequest) returns (RunsResponse);
   rpc AddMetrics(AddMetricsRequest) returns (AddMetricsResponse);
   rpc AddArtifact(stream AddArtifactRequest) returns (AddArtifactResponse);
-  rpc Artifact(ArtifactRequeset) returns (stream ArtifactResponse);
+  rpc Artifact(ArtifactRequest) returns (stream ArtifactResponse);
 }
 
 message Metric {
