@@ -26,8 +26,8 @@ and/or download your models.
 Already generated gRPC SDKs for multiple languages are available to download using `buf.build` [here](https://buf.build/zeddo123/mlsolid/sdks)
 
 ## Features
-*. Experiment tracking with metrics and artifacts
-*. Model registry
+* Experiment tracking with metrics and artifacts
+* Model registry
 
 ## Configuration
 Configuration happens through a `yaml` file located either at `./mlsolid.yaml` of the binary or at `/etc/mlsolid/mlsolid.yaml`.
