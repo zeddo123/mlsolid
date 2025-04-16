@@ -39,6 +39,13 @@ service MlsolidService {
   rpc AddMetrics(AddMetricsRequest) returns (AddMetricsResponse);
   rpc AddArtifact(stream AddArtifactRequest) returns (AddArtifactResponse);
   rpc Artifact(ArtifactRequest) returns (stream ArtifactResponse);
+
+  // Model registry methods
+  rpc CreateModelRegistry(CreateModelRegistryRequest) returns (CreateModelRegistryResponse);
+  rpc ModelRegistry(ModelRegistryRequest) returns (ModelRegistryResponse);
+  rpc AddModelEntry(AddModelEntryRequest) returns (AddModelEntryResponse);
+  rpc TaggedModel(TaggedModelRequest) returns (TaggedModelResponse);
+  rpc TagModel(TagModelRequest) returns (TagModelResponse);
 }
 
 message Metric {
