@@ -1,5 +1,6 @@
 # mlsolid
-
+![mlflow-banner-4](https://github.com/user-attachments/assets/06baeb29-9c30-4efa-af9c-0a485656a520)
+[![Docker](https://github.com/zeddo123/mlsolid/actions/workflows/docker-publish.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/docker-publish.yaml)
 [![Build](https://github.com/zeddo123/mlsolid/actions/workflows/build.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/build.yaml)
 [![golangci-lint](https://github.com/zeddo123/mlsolid/actions/workflows/lint.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/lint.yaml)
 [![Buf CI](https://github.com/zeddo123/mlsolid/actions/workflows/buf-ci.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/buf-ci.yaml)
