@@ -108,6 +108,54 @@ func (s *Service) AddMetrics(ctx context.Context,
 	return &mlsolidv1.AddMetricsResponse{Added: true}, nil
 }
 
+func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.MlsolidService_ArtifactServer) error {
+	if req == nil {
+		return status.Error(codes.InvalidArgument, "req cannot be <nil>")
+	}
+
+	artifact, body, err := s.Controller.Artifact(stream.Context(), req.RunId, req.ArtifactName)
+	if err != nil {
+		return ParseError(err)
+	}
+	defer body.Close()
+
+	bufferSize := 1024
+	buffer := make([]byte, bufferSize)
+
+	err = stream.Send(&mlsolidv1.ArtifactResponse{Request: &mlsolidv1.ArtifactResponse_Metadata{
+		Metadata: &mlsolidv1.MetaData{
+			Name:  artifact.Name,
+			Type:  string(artifact.ContentType),
+			RunId: req.RunId,
+		},
+	}})
+	if err != nil {
+		return status.Error(codes.Internal, "could not send metadata of artifact")
+	}
+
+	for {
+		_, err := body.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return status.Error(codes.Internal, "could not read artifact into buffer")
+		}
+
+		err = stream.Send(&mlsolidv1.ArtifactResponse{Request: &mlsolidv1.ArtifactResponse_Content{
+			Content: &mlsolidv1.Content{
+				Content: buffer,
+			},
+		}})
+		if err != nil {
+			return status.Error(codes.Internal, "could not send chunk to client")
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactServer) error { //nolint: cyclop
 	buf := bytes.Buffer{}
 
@@ -163,7 +211,7 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 
 	return stream.SendAndClose(&mlsolidv1.AddArtifactResponse{
 		Name:   artifactName,
-		Status: mlsolidv1.Status_SUCCESS,
+		Status: mlsolidv1.Status_STATUS_SUCCESS,
 		Size:   uint64(buf.Len()), //nolint: gosec
 	})
 }
