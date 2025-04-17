@@ -1,7 +1,7 @@
-buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.5.1-20250330193842-f2406eeeb9c1.2 h1:AtGmlllxA89w0znvYu5mK+7snpjegtgowh/b1rJe418=
-buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.5.1-20250330193842-f2406eeeb9c1.2/go.mod h1:Jlrnmunyvi9QIyxVerOFSWqb9zNzmkR+aiw92EGQM08=
-buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.6-20250330164730-a711f4bb72c3.1 h1:UexjNU3gI6lM9WFziXJa128IU96geIhMBA/72CUC+ZA=
-buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.6-20250330164730-a711f4bb72c3.1/go.mod h1:JYY/jnDkpzXgSNffr2p4NKcF3+sYq2hxKKogOso6Yu0=
+buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.5.1-20250416185520-69db99269d37.2 h1:Uazz5rI7IPgwz+4UuQjB3gz5FOIXybz/cJa8emPUWZo=
+buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.5.1-20250416185520-69db99269d37.2/go.mod h1:4KB6ODywZ9I/o/cHRJa9uM5NjUNcXcoJ7YN+Fz2Ev9E=
+buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.6-20250416185520-69db99269d37.1 h1:B2mvzw8EieP+W3W1hpFtN1a6B184t8DpH+2Qg8z6jdM=
+buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.6-20250416185520-69db99269d37.1/go.mod h1:JYY/jnDkpzXgSNffr2p4NKcF3+sYq2hxKKogOso6Yu0=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 h1:bvDV9vkmnHYOMsOr4WLk+Vo07yKIzd94sVoIqshQ4bU=

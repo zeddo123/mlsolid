@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -119,4 +120,21 @@ func (c *Controller) AddArtifacts(ctx context.Context, runID string, as []types.
 	}
 
 	return uploadErr
+}
+
+// Artifact fetches an artifact and returns a Reader to its content.
+func (c *Controller) Artifact(ctx context.Context, runID string,
+	artifact string,
+) (*types.SavedArtifact, io.ReadCloser, error) {
+	a, err := c.Redis.Artifact(ctx, runID, artifact)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	body, err := c.S3.DownloadFile(ctx, a.S3Key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &a, body, nil
 }
