@@ -127,7 +127,7 @@ func (s Store) DownloadFile(ctx context.Context, key string) (io.ReadCloser, err
 		Key:    &key,
 	})
 	if err != nil {
-		return nil, err
+		return nil, types.NewInternalErr(err.Error())
 	}
 
 	return obj.Body, nil
