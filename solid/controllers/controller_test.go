@@ -66,7 +66,7 @@ func TestRunFlow(t *testing.T) {
 
 func TestModelRegistryFlow(t *testing.T) {
 	// Arrange
-	controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: s3.MockObjectStore{}}
+	controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
 
 	run := types.NewRun("run2", "exp2")
 	artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: []byte{1, 2, 3}}
