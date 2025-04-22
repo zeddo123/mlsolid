@@ -49,7 +49,7 @@ type StoreOps struct {
 func NewStore(ops StoreOps) (Store, error) {
 	service := Store{
 		Bucket:          ops.Bucket,
-		Endpoint:        ops.Bucket,
+		Endpoint:        ops.Endpoint,
 		AccessKey:       ops.AccessKey,
 		SecretAccessKey: ops.SecretAccessKey,
 		Signature:       ops.Signature,
