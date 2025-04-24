@@ -119,6 +119,10 @@ func (r *RedisStore) Artifact(ctx context.Context, runID string, id string) (typ
 		return types.SavedArtifact{}, types.NewInternalErr("could not pull artifact s3 key")
 	}
 
+	if mapping["Name"] == "" {
+		return types.SavedArtifact{}, types.NewNotFoundErr("could not find artifact")
+	}
+
 	return types.SavedArtifact{
 		Name:        mapping["Name"],
 		ContentType: types.ContentType(mapping["Type"]),
