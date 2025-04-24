@@ -4,6 +4,8 @@ package controllers_test
 
 import (
 	"context"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,29 +66,79 @@ func TestRunFlow(t *testing.T) {
 	assert.Equal(t, "huge", savedRun.Metrics["model_size"].LastVal())
 }
 
+func TestArtifact(t *testing.T) {
+	t.Run("content_of_an_artifact_is_saved_correctly", func(t *testing.T) {
+		t.Parallel()
+
+		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
+
+		run := types.NewRun("run_artifact", "artifact_exp")
+		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: []byte{1, 2, 3}}
+
+		// Act
+		err := controller.CreateRun(context.Background(), run)
+		require.NoError(t, err)
+
+		err = controller.AddArtifacts(context.Background(), "run_artifact", []types.Artifact{artifact})
+		require.NoError(t, err)
+
+		savedArtifact, content, err := controller.Artifact(context.Background(), "run_artifact", "model_path.pt")
+
+		// Assert
+		assert.NoError(t, err)
+		assert.NotNil(t, content)
+		assert.NotNil(t, savedArtifact)
+		defer content.Close()
+		b, err := io.ReadAll(content)
+		require.NoError(t, err)
+		assert.Equal(t, artifact.Checkpoint, b)
+		assert.Equal(t, "model_path.pt", savedArtifact.Name)
+		assert.Equal(t, types.ModelContentType, savedArtifact.ContentType)
+		assert.NotZero(t, savedArtifact.S3Key)
+	})
+
+	t.Run("unknown_artifact_returns_an_error", func(t *testing.T) {
+		t.Parallel()
+
+		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
+
+		// Act
+		savedArtifact, content, err := controller.Artifact(context.Background(), "random_run_id", "unknown_artifact_name")
+
+		// Assert
+		t.Log(err)
+		assert.True(t, errors.Is(err, types.ErrNotFound))
+		assert.Nil(t, savedArtifact)
+		assert.Nil(t, content)
+	})
+}
+
 func TestModelRegistryFlow(t *testing.T) {
-	// Arrange
-	controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
+	t.Run("create_and_pull_model_from_registry", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
 
-	run := types.NewRun("run2", "exp2")
-	artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: []byte{1, 2, 3}}
+		run := types.NewRun("run2", "exp2")
+		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: []byte{1, 2, 3}}
 
-	// Act
-	err := controller.CreateRun(context.Background(), run)
-	require.NoError(t, err)
+		// Act
+		err := controller.CreateRun(context.Background(), run)
+		require.NoError(t, err)
 
-	err = controller.AddArtifacts(context.Background(), "run2", []types.Artifact{artifact})
-	require.NoError(t, err)
+		err = controller.AddArtifacts(context.Background(), "run2", []types.Artifact{artifact})
+		require.NoError(t, err)
 
-	err = controller.CreateModelRegistry(context.Background(), "exp2-registry")
-	require.NoError(t, err)
+		err = controller.CreateModelRegistry(context.Background(), "exp2-registry")
+		require.NoError(t, err)
 
-	err = controller.AddArtifactToRegistry(context.Background(), "exp2-registry", "run2", "model_path.pt", "prod")
-	require.NoError(t, err)
+		err = controller.AddArtifactToRegistry(context.Background(), "exp2-registry", "run2", "model_path.pt", "prod")
+		require.NoError(t, err)
 
-	// Assert
-	_, err = controller.TaggedModel(context.Background(), "exp2-registry", "prod")
-	assert.NoError(t, err)
-	_, err = controller.LastModelEntry(context.Background(), "exp2-registry")
-	assert.NoError(t, err)
+		// Assert
+		_, err = controller.TaggedModel(context.Background(), "exp2-registry", "prod")
+		assert.NoError(t, err)
+		_, err = controller.LastModelEntry(context.Background(), "exp2-registry")
+		assert.NoError(t, err)
+	})
 }
