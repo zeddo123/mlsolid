@@ -60,6 +60,19 @@ message Run {
   map<string, Metric> metrics = 4;
 }
 
+message ModelEntry {
+  string url = 1;
+  repeated string tags = 2;
+}
+
+message ModelEntryList {
+  repeated int32 indx = 1;
+}
+
+message ModelEntryTags {
+  map<string, ModelEntryList> entries = 1;
+}
+
 message ExperimentsRequest {}
 
 message ExperimentsResponse {
@@ -135,4 +148,52 @@ message ArtifactResponse {
     MetaData metadata = 1;
     Content content = 2;
   }
+}
+
+message CreateModelRegistryRequest {
+  string name = 1;
+}
+
+message CreateModelRegistryResponse {
+  bool created = 1;
+}
+
+message ModelRegistryRequest{
+  string name = 1;
+}
+
+message ModelRegistryResponse {
+  string name = 1;
+  repeated ModelEntry model_entries = 2;  
+  ModelEntryTags tags = 3;
+}
+
+message AddModelEntryRequest {
+  string name = 1;
+  string run_id = 2;
+  string artifact_id = 3;
+  repeated string tags = 4;
+}
+
+message AddModelEntryResponse {
+  bool added = 1;
+}
+
+message TaggedModelRequest {
+  string name = 1;
+  string tag = 2;
+}
+
+message TaggedModelResponse {
+  ModelEntry entry = 1;
+}
+
+message TagModelRequest {
+  string name = 1;
+  int32 version = 2;
+  repeated string tags = 3;
+}
+
+message TagModelResponse {
+  bool added = 1;
 }
