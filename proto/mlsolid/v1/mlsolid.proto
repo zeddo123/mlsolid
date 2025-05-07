@@ -158,13 +158,13 @@ message CreateModelRegistryResponse {
   bool created = 1;
 }
 
-message ModelRegistryRequest{
+message ModelRegistryRequest {
   string name = 1;
 }
 
 message ModelRegistryResponse {
   string name = 1;
-  repeated ModelEntry model_entries = 2;  
+  repeated ModelEntry model_entries = 2;
   ModelEntryTags tags = 3;
 }
 
