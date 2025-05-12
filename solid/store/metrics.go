@@ -34,8 +34,22 @@ func (r *RedisStore) RunMetrics(ctx context.Context, runID string) ([]string, er
 	return r.scanKeys(ctx, pattern)
 }
 
-func (r *RedisStore) Metrics(ctx context.Context, runID string) ([]types.Metric, error) {
-	return nil, nil
+func (r *RedisStore) Metrics(ctx context.Context, runID string) (map[string]types.Metric, error) {
+	keys, err := r.scanKeys(ctx, runID)
+	if err != nil {
+		return nil, types.NewInternalErr("could not pull keys of run metrics")
+	}
+
+	p := r.Client.Pipeline()
+
+	res := r.metrics(ctx, p, keys)
+
+	_, err = p.Exec(ctx)
+	if err != nil {
+		return nil, types.NewInternalErr("could not pull metrics from redis")
+	}
+
+	return r.parseMetrics(ctx, res)
 }
 
 func (r *RedisStore) setMetrics(ctx context.Context, p redis.Pipeliner,
@@ -79,7 +93,7 @@ func (r *RedisStore) metrics(ctx context.Context, p redis.Pipeliner, keys []stri
 	return res
 }
 
-func (r *RedisStore) parseMetric(ctx context.Context, res *redis.XMessageSliceCmd) (types.Metric, error) {
+func (r *RedisStore) parseMetric(_ context.Context, res *redis.XMessageSliceCmd) (types.Metric, error) {
 	msgs, err := res.Result()
 	if err != nil {
 		return nil, types.NewInternalErr("could not fetch metric")
