@@ -3,8 +3,8 @@ module github.com/zeddo123/mlsolid
 go 1.24.1
 
 require (
-	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.5.1-20250512171131-aa51970b3c83.2
-	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.6-20250512171131-aa51970b3c83.1
+	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.5.1-20250514132102-7801b7e77a74.2
+	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.6-20250514132102-7801b7e77a74.1
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67
@@ -104,6 +104,6 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250505200425-f936aa4a68b2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
