@@ -122,3 +122,33 @@ func parseGrpcMetric(ms []*mlsolidv1.Metric) []types.Metric {
 
 	return metrics
 }
+
+func parseModelRegistry(r *types.ModelRegistry) *mlsolidv1.ModelRegistryResponse {
+	resp := &mlsolidv1.ModelRegistryResponse{
+		Name:         r.Name,
+		ModelEntries: make([]*mlsolidv1.ModelEntry, len(r.Models)),
+		Tags: &mlsolidv1.ModelEntryTags{
+			Entries: make(map[string]*mlsolidv1.ModelEntryList),
+		},
+	}
+
+	for i, entry := range r.Models {
+		resp.ModelEntries[i] = &mlsolidv1.ModelEntry{
+			Url:  entry.URL,
+			Tags: entry.Tags,
+		}
+	}
+
+	for tag, indexs := range r.Tags {
+		indxs := make([]int32, len(indexs))
+		for i, idx := range indexs {
+			indxs[i] = int32(idx)
+		}
+
+		resp.Tags.Entries[tag] = &mlsolidv1.ModelEntryList{
+			Indx: indxs,
+		}
+	}
+
+	return resp
+}

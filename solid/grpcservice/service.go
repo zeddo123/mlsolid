@@ -215,3 +215,81 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 		Size:   uint64(buf.Len()), //nolint: gosec
 	})
 }
+
+func (s *Service) CreateModelRegistry(ctx context.Context,
+	req *mlsolidv1.CreateModelRegistryRequest,
+) (*mlsolidv1.CreateModelRegistryResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
+	}
+
+	err := s.Controller.CreateModelRegistry(ctx, req.Name)
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	return &mlsolidv1.CreateModelRegistryResponse{Created: true}, nil
+}
+
+func (s *Service) ModelRegistry(ctx context.Context,
+	req *mlsolidv1.ModelRegistryRequest,
+) (*mlsolidv1.ModelRegistryResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
+	}
+
+	registry, err := s.Controller.ModelRegistry(ctx, req.Name)
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	return parseModelRegistry(registry), nil
+}
+
+func (s *Service) AddModelEntry(ctx context.Context,
+	req *mlsolidv1.AddModelEntryRequest,
+) (*mlsolidv1.AddModelEntryResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
+	}
+
+	err := s.Controller.AddArtifactToRegistry(ctx, req.Name, req.RunId, req.ArtifactId, req.Tags...)
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	return &mlsolidv1.AddModelEntryResponse{Added: true}, nil
+}
+
+func (s *Service) TaggedModel(ctx context.Context, req *mlsolidv1.TaggedModelRequest) (*mlsolidv1.TaggedModelResponse,
+	error,
+) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
+	}
+
+	entry, err := s.Controller.TaggedModel(ctx, req.Name, req.Tag)
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	return &mlsolidv1.TaggedModelResponse{
+		Entry: &mlsolidv1.ModelEntry{
+			Url:  entry.URL,
+			Tags: entry.Tags,
+		},
+	}, nil
+}
+
+func (s *Service) TagModel(ctx context.Context, req *mlsolidv1.TagModelRequest) (*mlsolidv1.TagModelResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
+	}
+
+	err := s.Controller.TagModel(ctx, req.Name, int(req.Version), req.Tags...)
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	return &mlsolidv1.TagModelResponse{Added: true}, nil
+}
