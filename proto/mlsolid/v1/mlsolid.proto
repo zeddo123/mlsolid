@@ -45,6 +45,7 @@ service MlsolidService {
   rpc ModelRegistry(ModelRegistryRequest) returns (ModelRegistryResponse);
   rpc AddModelEntry(AddModelEntryRequest) returns (AddModelEntryResponse);
   rpc TaggedModel(TaggedModelRequest) returns (TaggedModelResponse);
+  rpc StreamTaggedModel(StreamTaggedModelRequest) returns (stream StreamTaggedModelResponse);
   rpc TagModel(TagModelRequest) returns (TagModelResponse);
 }
 
@@ -186,6 +187,18 @@ message TaggedModelRequest {
 
 message TaggedModelResponse {
   ModelEntry entry = 1;
+}
+
+message StreamTaggedModelRequest {
+  string name = 1;
+  string tag = 2;
+}
+
+message StreamTaggedModelResponse {
+  oneof response {
+    MetaData metadata = 1;
+    Content content = 2;
+  }
 }
 
 message TagModelRequest {
