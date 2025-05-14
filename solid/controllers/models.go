@@ -16,6 +16,10 @@ func (c *Controller) ModelRegistry(ctx context.Context, name string) (*types.Mod
 }
 
 func (c *Controller) CreateModelRegistry(ctx context.Context, name string) error {
+	if name == "" {
+		return types.NewBadRequest("model registry name cannot be empty")
+	}
+
 	return c.Redis.CreateModelRegistry(ctx, *types.NewModelRegistry(name))
 }
 
