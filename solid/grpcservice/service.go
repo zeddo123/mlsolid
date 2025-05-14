@@ -281,6 +281,63 @@ func (s *Service) TaggedModel(ctx context.Context, req *mlsolidv1.TaggedModelReq
 	}, nil
 }
 
+func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
+	stream mlsolidv1grpc.MlsolidService_StreamTaggedModelServer,
+) error {
+	if req == nil {
+		return status.Error(codes.InvalidArgument, "req cannot be <nil>")
+	}
+
+	entry, err := s.Controller.TaggedModel(stream.Context(), req.Name, req.Tag)
+	if err != nil {
+		return ParseError(err)
+	}
+
+	bufferSize := 1024
+	buffer := make([]byte, bufferSize)
+
+	err = stream.Send(&mlsolidv1.StreamTaggedModelResponse{
+		Response: &mlsolidv1.StreamTaggedModelResponse_Metadata{
+			Metadata: &mlsolidv1.MetaData{
+				Name: req.Name,
+			},
+		},
+	})
+	if err != nil {
+		return status.Error(codes.Internal, "could not send metadata of model entry")
+	}
+
+	body, err := s.Controller.S3.DownloadFile(stream.Context(), entry.URL)
+	if err != nil {
+		return ParseError(err)
+	}
+	defer body.Close()
+
+	for {
+		_, err := body.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return status.Error(codes.Internal, "could not read artifact into buffer")
+		}
+
+		err = stream.Send(&mlsolidv1.StreamTaggedModelResponse{
+			Response: &mlsolidv1.StreamTaggedModelResponse_Content{
+				Content: &mlsolidv1.Content{
+					Content: buffer,
+				},
+			},
+		})
+		if err != nil {
+			return status.Error(codes.Internal, "could not send chunk to client")
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) TagModel(ctx context.Context, req *mlsolidv1.TagModelRequest) (*mlsolidv1.TagModelResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
