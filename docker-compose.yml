@@ -1,0 +1,23 @@
+services:
+  redis:
+    image: redis:7.4.7-bookworm
+
+  s3bucket:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=a5d5a6a2935f42158021b508d7ad7f68
+      - MINIO_ROOT_PASSWORD=e6956547802d4ab9957669374ed843b9
+      - MINIO_DEFAULT_BUCKETS=mlsolid-artifacts
+
+  mlsolid:
+    image: ghcr.io/zeddo123/mlsolid:main
+    ports:
+      - 5000:5000
+    depends_on:
+      - s3bucket
+      - redis
+    volumes:
+      - "./mlsolid.yaml:/etc/mlsolid/mlsolid.yaml"
