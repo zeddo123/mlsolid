@@ -43,4 +43,5 @@ s3_endpoint: ""
 s3_key: ""
 s3_secret: ""
 s3_bucket: ""
+s3_region: ""
 ```
