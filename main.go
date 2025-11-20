@@ -41,6 +41,7 @@ func main() {
 		AccessKey:       config.S3Key,
 		SecretAccessKey: config.S3Secret,
 		Region:          config.S3Region,
+		Prefix:          config.S3Prefix,
 	})
 	if err != nil {
 		panic(err)

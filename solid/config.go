@@ -18,6 +18,7 @@ type Config struct {
 	S3Secret   string `mapstructure:"s3_secret"`
 	S3Bucket   string `mapstructure:"s3_bucket"`
 	S3Region   string `mapstructure:"s3_region"`
+	S3Prefix   string `mapstructure:"s3_prefix"`
 }
 
 func LoadConfig(path string) (Config, error) {
@@ -39,6 +40,7 @@ func LoadConfig(path string) (Config, error) {
 	viper.SetDefault("s3_secret", "")
 	viper.SetDefault("s3_bucket", "")
 	viper.SetDefault("s3_region", "")
+	viper.SetDefault("s3_prefix", "artifacts")
 
 	viper.AutomaticEnv()
 
