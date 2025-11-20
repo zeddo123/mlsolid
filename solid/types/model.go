@@ -8,6 +8,7 @@ import (
 type ModelEntry struct {
 	URL  string
 	Tags []string
+	Name string
 }
 
 type ModelRegistry struct {

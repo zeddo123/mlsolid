@@ -139,7 +139,7 @@ func (s *Store) GenerateKey(name string) string {
 		panic(err)
 	}
 
-	return fmt.Sprintf("%s/%s-%s", s.Prefix, name, r)
+	return fmt.Sprintf("%s/%s-%s", s.Prefix, r, name)
 }
 
 func generateID(b int) (string, error) {

@@ -3,7 +3,9 @@ package grpcservice
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"strings"
 
 	mlsolidv1grpc "buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
 	mlsolidv1 "buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go/mlsolid/v1"
@@ -133,13 +135,13 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 		return status.Error(codes.Internal, "could not send metadata of artifact")
 	}
 
+	eof := false
+
 	for {
 		_, err := body.Read(buffer)
 		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
+			eof = true
+		} else if err != nil {
 			return status.Error(codes.Internal, "could not read artifact into buffer")
 		}
 
@@ -150,6 +152,10 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 		}})
 		if err != nil {
 			return status.Error(codes.Internal, "could not send chunk to client")
+		}
+
+		if eof {
+			break
 		}
 	}
 
@@ -296,10 +302,13 @@ func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 	bufferSize := 1024
 	buffer := make([]byte, bufferSize)
 
+	fileName := strings.ReplaceAll(entry.URL, "/", "_")
+
 	err = stream.Send(&mlsolidv1.StreamTaggedModelResponse{
 		Response: &mlsolidv1.StreamTaggedModelResponse_Metadata{
 			Metadata: &mlsolidv1.MetaData{
-				Name: req.Name,
+				Name: fmt.Sprintf("%s_%s_%s", req.Name, req.Tag, fileName),
+				Type: string(types.ModelContentType),
 			},
 		},
 	})
