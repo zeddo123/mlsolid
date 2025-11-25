@@ -36,6 +36,8 @@ const (
 	// Example
 	// tag:registry:yolov12:prod
 	ModelRegistryTagKeyPattern = "tag:registry:%s:%s"
+	// APIKeyKeyPattern pattern for an api key
+	APIKeyKeyPattern = "apikey:%s"
 
 	TransactionMaxTries = 10
 )
@@ -74,6 +76,10 @@ func (r *RedisStore) makeModelRegistryTagsKey(name string) string {
 
 func (r *RedisStore) makeModelRegistryTagKey(name, tag string) string {
 	return fmt.Sprintf(ModelRegistryTagKeyPattern, name, tag)
+}
+
+func (r *RedisStore) makeAPIKeyKey(key string) string {
+	return fmt.Sprintf(APIKeyKeyPattern, key)
 }
 
 // runTx runs a transaction function with an optimistic locks on the keys passed as argument.
