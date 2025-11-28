@@ -11,6 +11,10 @@ import (
 )
 
 func (c *Controller) CreateRun(ctx context.Context, run types.Run) error {
+	if err := c.HasPermission(types.PushExperimentsPermission); err != nil {
+		return err
+	}
+
 	if c.S3 == nil {
 		return types.NewInternalErr("object store is not configured")
 	}
@@ -43,6 +47,10 @@ func (c *Controller) CreateRun(ctx context.Context, run types.Run) error {
 }
 
 func (c *Controller) Run(ctx context.Context, runID string) (*types.Run, error) {
+	if err := c.HasPermission(types.PushExperimentsPermission); err != nil {
+		return nil, err
+	}
+
 	id := types.NormalizeID(runID)
 
 	ok, err := c.Redis.RunExists(ctx, id)
@@ -58,6 +66,10 @@ func (c *Controller) Run(ctx context.Context, runID string) (*types.Run, error) 
 }
 
 func (c *Controller) Runs(ctx context.Context, ids []string) ([]*types.Run, error) {
+	if err := c.HasPermission(types.PushExperimentsPermission); err != nil {
+		return nil, err
+	}
+
 	normalized := make([]string, len(ids))
 
 	for i, id := range ids {
@@ -73,6 +85,10 @@ func (c *Controller) Runs(ctx context.Context, ids []string) ([]*types.Run, erro
 }
 
 func (c *Controller) AddMetrics(ctx context.Context, runID string, m []types.Metric) error {
+	if err := c.HasPermission(types.PushExperimentsPermission); err != nil {
+		return err
+	}
+
 	ok, err := c.Redis.RunExists(ctx, types.NormalizeID(runID))
 	if err != nil {
 		return err
@@ -97,6 +113,10 @@ func (c *Controller) AddMetrics(ctx context.Context, runID string, m []types.Met
 }
 
 func (c *Controller) AddArtifacts(ctx context.Context, runID string, as []types.Artifact) error {
+	if err := c.HasPermission(types.PushExperimentsPermission); err != nil {
+		return err
+	}
+
 	ids := types.ArtifactIDs(as)
 	artifactsMap := types.ArtifactIDMap(as)
 
@@ -126,6 +146,10 @@ func (c *Controller) AddArtifacts(ctx context.Context, runID string, as []types.
 func (c *Controller) Artifact(ctx context.Context, runID string,
 	artifact string,
 ) (*types.SavedArtifact, io.ReadCloser, error) {
+	if err := c.HasPermission(types.PushExperimentsPermission); err != nil {
+		return nil, nil, err
+	}
+
 	a, err := c.Redis.Artifact(ctx, runID, artifact)
 	if err != nil {
 		return nil, nil, err

@@ -7,6 +7,10 @@ import (
 )
 
 func (c *Controller) ModelRegistry(ctx context.Context, name string) (*types.ModelRegistry, error) {
+	if err := c.HasPermission(types.PullRegistryPermission); err != nil {
+		return nil, err
+	}
+
 	registry, err := c.Redis.ModelRegistry(ctx, name)
 	if err != nil {
 		return nil, err
@@ -16,6 +20,10 @@ func (c *Controller) ModelRegistry(ctx context.Context, name string) (*types.Mod
 }
 
 func (c *Controller) CreateModelRegistry(ctx context.Context, name string) error {
+	if err := c.HasPermission(types.PushRegistryPermission); err != nil {
+		return err
+	}
+
 	if name == "" {
 		return types.NewBadRequest("model registry name cannot be empty")
 	}
@@ -24,14 +32,26 @@ func (c *Controller) CreateModelRegistry(ctx context.Context, name string) error
 }
 
 func (c *Controller) LastModelEntry(ctx context.Context, registryName string) (types.ModelEntry, error) {
+	if err := c.HasPermission(types.PullRegistryPermission); err != nil {
+		return types.ModelEntry{}, err
+	}
+
 	return c.Redis.LastModel(ctx, registryName)
 }
 
 func (c *Controller) TaggedModel(ctx context.Context, registryName string, tag string) (types.ModelEntry, error) {
+	if err := c.HasPermission(types.PullRegistryPermission); err != nil {
+		return types.ModelEntry{}, err
+	}
+
 	return c.Redis.ModelByTag(ctx, registryName, tag)
 }
 
 func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url string, tags ...string) error {
+	if err := c.HasPermission(types.PushRegistryPermission); err != nil {
+		return err
+	}
+
 	registry, err := c.Redis.ModelRegistry(ctx, registryName)
 	if err != nil {
 		return err
@@ -45,6 +65,10 @@ func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url
 func (c *Controller) AddArtifactToRegistry(ctx context.Context, registryName string, runID string,
 	artifactID string, tags ...string,
 ) error {
+	if err := c.HasPermission(types.PushRegistryPermission); err != nil {
+		return err
+	}
+
 	artifact, err := c.Redis.Artifact(ctx, runID, artifactID)
 	if err != nil {
 		return err
@@ -54,6 +78,10 @@ func (c *Controller) AddArtifactToRegistry(ctx context.Context, registryName str
 }
 
 func (c *Controller) TagModel(ctx context.Context, registryName string, version int, tags ...string) error {
+	if err := c.HasPermission(types.PushRegistryPermission); err != nil {
+		return err
+	}
+
 	registry, err := c.Redis.ModelRegistry(ctx, registryName)
 	if err != nil {
 		return err

@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+type PermissionType string
+
+const (
+	PushRegistryPermission    PermissionType = "PushRegistry"
+	PullRegistryPermission    PermissionType = "PullRegistry"
+	PushExperimentsPermission PermissionType = "PushExperiments"
+)
+
 type Permissions struct {
 	PullRegistry    bool
 	PushRegistry    bool
@@ -40,5 +48,18 @@ func (p *Permissions) Mapping() map[string]string {
 		"PullRegistry":    strconv.FormatBool(p.PullRegistry),
 		"PushRegistry":    strconv.FormatBool(p.PushRegistry),
 		"PushExperiments": strconv.FormatBool(p.PushExperiments),
+	}
+}
+
+func (p *Permissions) HasPermission(perm PermissionType) bool {
+	switch perm {
+	case PullRegistryPermission:
+		return p.PullRegistry
+	case PushRegistryPermission:
+		return p.PushRegistry
+	case PushExperimentsPermission:
+		return p.PushExperiments
+	default:
+		return false
 	}
 }
