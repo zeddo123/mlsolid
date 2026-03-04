@@ -75,3 +75,40 @@ func TestNewGenericMetric(t *testing.T) {
 		assert.Equal(t, m.Name(), "m-s-e")
 	})
 }
+
+func TestGenericMetricTypeReflection(t *testing.T) {
+	t.Run("type=metric/continuous", func(t *testing.T) {
+		m := types.NewGenericMetric[float32]("mse", 2)
+
+		m.Add(12.33)
+		m.Add(10.23)
+		m.Commit()
+
+		assert.Equal(t, types.ContinuousMetric, m.Type())
+	})
+	t.Run("type=metric/multival", func(t *testing.T) {
+		m := types.NewGenericMetric[string]("paths", 2)
+
+		m.AddVal("path/to/image/1")
+		m.AddVal("path/to/image/2")
+		m.Commit()
+
+		assert.Equal(t, types.MultiValueMetric, m.Type())
+	})
+	t.Run("type=metric/single-numeric", func(t *testing.T) {
+		m := types.NewGenericMetric[float64]("best acc", 1)
+
+		m.AddVal(99.0)
+		m.Commit()
+
+		assert.Equal(t, types.SingleNumericMetric, m.Type())
+	})
+	t.Run("type=metric/single", func(t *testing.T) {
+		m := types.NewGenericMetric[string]("checkpoint", 1)
+
+		m.AddVal("/path/to/checkpoint")
+		m.Commit()
+
+		assert.Equal(t, types.SingleMetric, m.Type())
+	})
+}
