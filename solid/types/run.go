@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 )
 
@@ -65,4 +67,16 @@ func (r Run) ArtifactsSlice() []Artifact {
 	}
 
 	return artifacts
+}
+
+func UniqueMetrics(runs []*Run) []string {
+	metrics := make(map[string]struct{})
+
+	for _, run := range runs {
+		for m := range run.Metrics {
+			metrics[m] = struct{}{}
+		}
+	}
+
+	return slices.Collect(maps.Keys(metrics))
 }
