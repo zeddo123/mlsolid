@@ -1,4 +1,4 @@
-package types //nolint: testpackage
+package types //nolint: testpackage revive
 
 import (
 	"testing"

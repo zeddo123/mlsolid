@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
+	"slices"
 
 	"github.com/zeddo123/mlsolid/solid/types"
 )
@@ -137,4 +139,21 @@ func (c *Controller) Artifact(ctx context.Context, runID string,
 	}
 
 	return &a, body, nil
+}
+
+func (c *Controller) Artifacts(ctx context.Context,
+	runIds []string,
+) (map[string][]string, error) {
+	out := make(map[string][]string, len(runIds))
+
+	for _, id := range runIds {
+		runArtifacts, err := c.Redis.Artifacts(ctx, id)
+		if err != nil {
+			continue
+		}
+
+		out[id] = slices.Collect(maps.Keys(runArtifacts))
+	}
+
+	return out, nil
 }

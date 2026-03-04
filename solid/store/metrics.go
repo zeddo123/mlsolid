@@ -68,16 +68,17 @@ func (r *RedisStore) setMetric(ctx context.Context, p redis.Pipeliner,
 	runID string, m types.Metric,
 ) []*redis.StringCmd {
 	key := r.makeMetricKey(m.Name(), runID)
-	cmds := make([]*redis.StringCmd, 0)
+	vals := m.ValsToCommit()
+	cmds := make([]*redis.StringCmd, len(vals))
 
-	for _, val := range m.ValsToCommit() {
-		cmds = append(cmds, p.XAdd(ctx, &redis.XAddArgs{
+	for i, val := range vals {
+		cmds[i] = p.XAdd(ctx, &redis.XAddArgs{
 			Stream: key,
 			Values: map[string]any{
 				"Name": m.Name(),
 				"Val":  val,
 			},
-		}))
+		})
 	}
 
 	return cmds

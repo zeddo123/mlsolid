@@ -25,7 +25,7 @@ func BuildRoutes(f *fiber.App) error {
 	v1.Get("/exp/:id/metric/:mid", metric)
 
 	v1.Get("/exp/:id/artifacts", artifacts)
-	v1.Get("/exp/:id/artifacts/:aid", artifact)
+	v1.Get("artifact/:rid/:aid", artifact)
 
 	return nil
 }
