@@ -3,17 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net"
 
-	mlsolidv1grpc "buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
 	"github.com/redis/go-redis/v9"
 	"github.com/zeddo123/mlsolid/solid"
+	"github.com/zeddo123/mlsolid/solid/api"
 	"github.com/zeddo123/mlsolid/solid/controllers"
 	"github.com/zeddo123/mlsolid/solid/grpcservice"
 	"github.com/zeddo123/mlsolid/solid/s3"
 	"github.com/zeddo123/mlsolid/solid/store"
-	"google.golang.org/grpc"
 )
 
 func main() {
@@ -47,27 +44,13 @@ func main() {
 		panic(err)
 	}
 
-	service := grpcservice.Service{
-		Controller: controllers.Controller{
-			Redis: store.RedisStore{Client: *redisClient},
-			S3:    objectStore,
-		},
+	controller := controllers.Controller{
+		Redis: store.RedisStore{Client: *redisClient},
+		S3:    objectStore,
 	}
 
-	l, err := net.Listen("tcp", ":"+config.GrpcPort)
-	if err != nil {
-		log.Println("could not listen to port", config.GrpcPort)
+	go grpcservice.StartServer(config.GrpcPort, &controller)
+	go api.StartServer(config.APIPort, &controller)
 
-		panic(err)
-	}
-
-	server := grpc.NewServer()
-
-	mlsolidv1grpc.RegisterMlsolidServiceServer(server, &service)
-
-	log.Println("gRPC server started at", config.GrpcPort)
-
-	if err := server.Serve(l); err != nil {
-		panic(err)
-	}
+	select {}
 }

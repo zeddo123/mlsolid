@@ -5,12 +5,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"net"
 	"strings"
 
 	mlsolidv1grpc "buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
 	mlsolidv1 "buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go/mlsolid/v1"
 	"github.com/zeddo123/mlsolid/solid/controllers"
 	"github.com/zeddo123/mlsolid/solid/types"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -18,7 +21,30 @@ import (
 
 type Service struct {
 	mlsolidv1grpc.UnimplementedMlsolidServiceServer
-	Controller controllers.Controller
+	Controller *controllers.Controller
+}
+
+func StartServer(port string, ctrl *controllers.Controller) {
+	l, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Println("could not listen to port", port)
+
+		panic(err)
+	}
+
+	service := Service{
+		Controller: ctrl,
+	}
+
+	server := grpc.NewServer()
+
+	mlsolidv1grpc.RegisterMlsolidServiceServer(server, &service)
+
+	log.Println("gRPC server started at", port)
+
+	if err := server.Serve(l); err != nil {
+		panic(err)
+	}
 }
 
 func (s *Service) Experiment(ctx context.Context,

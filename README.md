@@ -89,6 +89,8 @@ client.artifact(run_id, 'plain_text_file.txt')
 Configuration happens through a `yaml` file located either at `./mlsolid.yaml` of the binary or at `/etc/mlsolid/mlsolid.yaml`.
 ```yaml
 prod: true
+
+api_port: 8050
 grpc_port: 5000
 
 redis_addr: redis:6379
