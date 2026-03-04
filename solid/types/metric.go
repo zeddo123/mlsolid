@@ -133,3 +133,30 @@ func (s *GenericMetric[T]) Type() MetricType {
 
 	return ComplexMetric
 }
+
+// metricTypePrededence given two types returns the metrics that has the most precedence.
+// If two metric types are different underlying data types
+// (SingleMetric vs SingleNumericMetric) a ComplexMetric is returned.
+// Example:
+// ContinuousMetric has a higher precedence than SingleNumericMetric
+func metricTypePrededence(m1, m2 MetricType) MetricType {
+	if m1 == "" {
+		return m2
+	} else if m2 == "" || m1 == m2 {
+		return m1
+	} else if isNumericMetricType(m1) && isNumericMetricType(m2) {
+		return ContinuousMetric
+	} else if isNaNMetricType(m1) && isNaNMetricType(m2) {
+		return MultiValueMetric
+	}
+
+	return ComplexMetric
+}
+
+func isNumericMetricType(m MetricType) bool {
+	return m == SingleNumericMetric || m == ContinuousMetric
+}
+
+func isNaNMetricType(m MetricType) bool {
+	return m == SingleMetric || m == MultiValueMetric
+}

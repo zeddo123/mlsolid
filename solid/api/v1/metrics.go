@@ -36,7 +36,10 @@ func metric(ctx *fiber.Ctx) error {
 		})
 	}
 
+	metric, kind := types.CollectMetric(rs, metricID)
+
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"metric": types.CollectMetric(rs, metricID),
+		"metric": metric,
+		"kind":   kind,
 	})
 }
