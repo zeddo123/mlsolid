@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-
 	v1 "github.com/zeddo123/mlsolid/solid/api/v1"
 	"github.com/zeddo123/mlsolid/solid/controllers"
 )

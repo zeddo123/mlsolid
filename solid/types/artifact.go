@@ -1,4 +1,4 @@
-package types
+package types //nolint: var-naming
 
 type ContentType string
 
