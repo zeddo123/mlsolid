@@ -7,6 +7,7 @@ import (
 type Config struct {
 	Prod bool `mapstructure:"prod"`
 
+	APIPort  string `mapstructure:"api_port"`
 	GrpcPort string `mapstructure:"grpc_port"`
 
 	RedisAddr     string `mapstructure:"redis_addr"`
@@ -29,6 +30,7 @@ func LoadConfig(path string) (Config, error) {
 
 	viper.SetDefault("prod", "true")
 
+	viper.SetDefault("api_port", "8050")
 	viper.SetDefault("grpc_port", "5000")
 
 	viper.SetDefault("redis_addr", "redis:6379")

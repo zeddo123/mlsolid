@@ -1,6 +1,8 @@
 package api //nolint: revive
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 
 	v1 "github.com/zeddo123/mlsolid/solid/api/v1"
@@ -23,4 +25,12 @@ func NewAPI(ctrl *controllers.Controller) *fiber.App {
 	}
 
 	return app
+}
+
+func StartServer(port string, ctrl *controllers.Controller) {
+	app := NewAPI(ctrl)
+
+	if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
+		panic(err)
+	}
 }
