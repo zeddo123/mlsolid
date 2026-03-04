@@ -1,6 +1,19 @@
 package types
 
-import "golang.org/x/exp/constraints"
+import (
+	"cmp"
+	"reflect"
+)
+
+type MetricType string
+
+const (
+	ContinuousMetric    MetricType = "metric/continuous"
+	MultiValueMetric    MetricType = "metric/multival"
+	SingleNumericMetric MetricType = "metric/single-numeric"
+	SingleMetric        MetricType = "metric/single"
+	ComplexMetric       MetricType = "metric/complex"
+)
 
 type Metric interface {
 	Name() string
@@ -10,15 +23,16 @@ type Metric interface {
 	Commit()
 	LastVal() any
 	AddVal(v any)
+	Type() MetricType
 }
 
-type GenericMetric[T constraints.Ordered] struct {
+type GenericMetric[T cmp.Ordered] struct {
 	Key        string
 	Values     []T
 	unCommited []T
 }
 
-func NewGenericMetric[T constraints.Ordered](key string, sizeAlloc int) *GenericMetric[T] {
+func NewGenericMetric[T cmp.Ordered](key string, sizeAlloc int) *GenericMetric[T] {
 	m := GenericMetric[T]{
 		Key: normalizeName(key),
 	}
@@ -80,4 +94,42 @@ func (s *GenericMetric[T]) Commit() {
 
 func (s *GenericMetric[T]) LastVal() any {
 	return s.Values[len(s.Values)-1]
+}
+
+// Type infers the MetricType using reflection. If the metric has multiple values
+// it can either be a ContinuousMetric (numerical) or a MultiValueMetric. In the
+// case where no value is present or a single value is present, it can be SingleMetric or SingleNumericMetric.
+func (s *GenericMetric[T]) Type() MetricType {
+	numeric := false
+	str := false
+
+	t := reflect.TypeFor[T]()
+
+	switch t.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64,
+		reflect.Complex64, reflect.Complex128:
+		numeric = true
+	case reflect.String:
+		str = true
+	}
+
+	switch len(s.Values) {
+	case 0, 1:
+		if numeric {
+			return SingleNumericMetric
+		} else if str {
+			return SingleMetric
+		}
+
+	default:
+		if numeric {
+			return ContinuousMetric
+		} else if str {
+			return MultiValueMetric
+		}
+	}
+
+	return ComplexMetric
 }
