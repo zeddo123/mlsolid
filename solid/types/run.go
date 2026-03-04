@@ -80,3 +80,15 @@ func UniqueMetrics(runs []*Run) []string {
 
 	return slices.Collect(maps.Keys(metrics))
 }
+
+func CollectMetric(runs []*Run, metric string) map[string]any {
+	metrics := make(map[string]any, len(runs))
+
+	for _, run := range runs {
+		if m, ok := run.Metrics[metric]; ok {
+			metrics[run.Name] = m.Vals()
+		}
+	}
+
+	return metrics
+}
