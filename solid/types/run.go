@@ -81,14 +81,19 @@ func UniqueMetrics(runs []*Run) []string {
 	return slices.Collect(maps.Keys(metrics))
 }
 
-func CollectMetric(runs []*Run, metric string) map[string]any {
+func CollectMetric(runs []*Run, metric string) (map[string]any, MetricType) {
 	metrics := make(map[string]any, len(runs))
+
+	var kind MetricType
 
 	for _, run := range runs {
 		if m, ok := run.Metrics[metric]; ok {
 			metrics[run.Name] = m.Vals()
+			curr := m.Type()
+
+			kind = metricTypePrededence(kind, curr)
 		}
 	}
 
-	return metrics
+	return metrics, kind
 }
