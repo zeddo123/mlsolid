@@ -12,7 +12,7 @@ import (
 const (
 	// ExpInfoKeyPattern is a pattern to a key that holds
 	// information on experiments.
-	ExpInfoKeyPattern = "exp:info:%s"
+	ExpInfoKeyPattern = "info:exp:%s"
 
 	// ExpKeyPattern is a pattern to an experiment key
 	// that holds index of all runs linked to that exp.
