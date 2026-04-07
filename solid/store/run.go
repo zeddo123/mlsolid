@@ -9,6 +9,10 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
+// SetRun saves a run to the redis store. Saving a run involves:
+// 1 - runKey (run:runId) is where the run data is stored
+// 2 - expKey (exp:expId) key index for all runs of an experiment
+// 3 - metrics (metric:metricName:runId) where each metric of the run is stored.
 func (r *RedisStore) SetRun(ctx context.Context, run types.Run) error {
 	key := r.makeRunKey(run.Name)
 
@@ -20,13 +24,17 @@ func (r *RedisStore) SetRun(ctx context.Context, run types.Run) error {
 
 			return nil
 		})
+		if err != nil {
+			return fmt.Errorf("could not run Tx: %w", err)
+		}
 
-		return err
+		return nil
 	}
 
 	return r.runTx(ctx, fn, TransactionMaxTries, key)
 }
 
+// RunExists checks if a run exists in the redis store.
 func (r *RedisStore) RunExists(ctx context.Context, runID string) (bool, error) {
 	key := r.makeRunKey(runID)
 
@@ -81,6 +89,7 @@ func (r *RedisStore) parseRun(ctx context.Context, hashRes *redis.MapStringStrin
 		Name:         mapping["Name"],
 		Timestamp:    timestamp,
 		ExperimentID: mapping["ExperimentID"],
+		Color:        mapping["Color"],
 		Metrics:      metrics,
 	}, nil
 }
@@ -146,6 +155,7 @@ func setRunHash(ctx context.Context, p redis.Pipeliner, key string, run types.Ru
 		"Name":         run.Name,
 		"Timestamp":    run.Timestamp.Format(time.RFC3339),
 		"ExperimentID": run.ExperimentID,
+		"Color":        run.Color,
 	})
 }
 

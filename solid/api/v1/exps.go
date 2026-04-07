@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/zeddo123/mlsolid/solid/types"
 )
@@ -54,11 +56,23 @@ func experiment(ctx *fiber.Ctx) error {
 		})
 	}
 
-	metrics := types.UniqueMetrics(rs)
+	runsInfo := make([]runInfo, len(rs))
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"runs":    runs,
-		"metrics": metrics,
-		"details": "successfully retrieved experiment",
-	})
+	for i, r := range rs {
+		if r != nil {
+			runsInfo[i] = runInfo{
+				RunID:     r.Name,
+				Timestamp: r.Timestamp.Format(time.RFC3339),
+				Color:     r.Color,
+			}
+		}
+	}
+
+	out := Experiment{
+		Details: "successfully retrieved experiment",
+		Runs:    runsInfo,
+		Metrics: types.UniqueMetrics(rs),
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(out)
 }
