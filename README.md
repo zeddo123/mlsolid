@@ -8,7 +8,7 @@
 
 mlsolid is a solid alternative to mlflow written in Go with Redis as its db backend, and s3 as its artifact storage.
 This project is split in multiple parts. `mlsolid` the server (this repo), [`mlsolidpy`](https://github.com/zeddo123/mlsolidpy) the python client,
-and a [frontend dashboard](https://github.com/zeddo123/mlsolid-front).
+and [solidash](https://github.com/zeddo123/solidash) a visualisation dashboard.
 
 mlsolid address my issue with mlflow by being:
 
