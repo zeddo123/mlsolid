@@ -93,26 +93,26 @@ func parseGrpcMetric(ms []*mlsolidv1.Metric) []types.Metric {
 	metrics := make([]types.Metric, len(ms))
 
 	for i, m := range ms {
-		if m == nil || len(m.Vals) == 0 {
+		if m == nil || len(m.GetVals()) == 0 {
 			continue
 		}
 
 		var metric types.Metric
 
-		switch m.Vals[0].GetVal().(type) {
+		switch m.GetVals()[0].GetVal().(type) {
 		case *mlsolidv1.Val_Str:
-			metric = types.NewGenericMetric[string](m.Name, len(m.Vals))
-			for _, val := range m.Vals {
+			metric = types.NewGenericMetric[string](m.GetName(), len(m.GetVals()))
+			for _, val := range m.GetVals() {
 				metric.AddVal(val.GetStr())
 			}
 		case *mlsolidv1.Val_Double:
-			metric = types.NewGenericMetric[float64](m.Name, len(m.Vals))
-			for _, val := range m.Vals {
+			metric = types.NewGenericMetric[float64](m.GetName(), len(m.GetVals()))
+			for _, val := range m.GetVals() {
 				metric.AddVal(val.GetDouble())
 			}
 		case *mlsolidv1.Val_Int:
-			metric = types.NewGenericMetric[int64](m.Name, len(m.Vals))
-			for _, val := range m.Vals {
+			metric = types.NewGenericMetric[int64](m.GetName(), len(m.GetVals()))
+			for _, val := range m.GetVals() {
 				metric.AddVal(val.GetInt())
 			}
 		}

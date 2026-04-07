@@ -138,7 +138,7 @@ func (s *GenericMetric[T]) Type() MetricType {
 // If two metric types are different underlying data types
 // (SingleMetric vs SingleNumericMetric) a ComplexMetric is returned.
 // Example:
-// ContinuousMetric has a higher precedence than SingleNumericMetric
+// ContinuousMetric has a higher precedence than SingleNumericMetric.
 func metricTypePrededence(m1, m2 MetricType) MetricType {
 	if m1 == "" {
 		return m2

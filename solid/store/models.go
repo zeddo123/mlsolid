@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -37,7 +36,7 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 	// Setting model info under key "info:registry:<name>"
 	p.HSet(ctx, infoKey, map[string]string{
 		"Name":      m.Name,
-		"Timestamp": fmt.Sprint(time.Now().UnixMilli()),
+		"Timestamp": strconv.FormatInt(time.Now().UnixMilli(), 10),
 	})
 
 	// Setting model entries under key "registry:<name>"

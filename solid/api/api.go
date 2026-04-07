@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -34,7 +32,7 @@ func NewAPI(ctrl *controllers.Controller) *fiber.App {
 func StartServer(port string, ctrl *controllers.Controller) {
 	app := NewAPI(ctrl)
 
-	if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
+	if err := app.Listen(":" + port); err != nil {
 		panic(err)
 	}
 }

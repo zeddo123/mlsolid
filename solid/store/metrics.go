@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -29,7 +28,7 @@ func (r *RedisStore) SetMetric(ctx context.Context, runID string, m types.Metric
 }
 
 func (r *RedisStore) RunMetrics(ctx context.Context, runID string) ([]string, error) {
-	pattern := fmt.Sprintf("metric:*:%s", runID)
+	pattern := "metric:*:" + runID
 
 	return r.scanKeys(ctx, pattern)
 }
