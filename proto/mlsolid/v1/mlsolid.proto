@@ -33,6 +33,7 @@ message Content {
 service MlsolidService {
   rpc Experiments(ExperimentsRequest) returns (ExperimentsResponse);
   rpc Experiment(ExperimentRequest) returns (ExperimentResponse);
+  rpc SetExperimentInfo(SetExperimentInfoRequest) returns (SetExperimentInfoResponse);
   rpc CreateRun(CreateRunRequest) returns (CreateRunResponse);
   rpc Run(RunRequest) returns (RunResponse);
   rpc Runs(RunsRequest) returns (RunsResponse);
@@ -87,6 +88,15 @@ message ExperimentRequest {
 message ExperimentResponse {
   repeated string run_ids = 1;
   string desc = 2;
+}
+
+message SetExperimentInfoRequest {
+  string exp_id = 1;
+  string desc = 2;
+}
+
+message SetExperimentInfoResponse {
+  string desc = 1;
 }
 
 message CreateRunRequest {
