@@ -86,6 +86,7 @@ message ExperimentRequest {
 
 message ExperimentResponse {
   repeated string run_ids = 1;
+  string desc = 2;
 }
 
 message CreateRunRequest {
