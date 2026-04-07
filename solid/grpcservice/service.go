@@ -59,8 +59,14 @@ func (s *Service) Experiment(ctx context.Context,
 		return nil, ParseError(err)
 	}
 
+	info, err := s.Controller.ExpInfo(ctx, id)
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
 	return &mlsolidv1.ExperimentResponse{
 		RunIds: runIDs,
+		Desc:   info.Description,
 	}, nil
 }
 
