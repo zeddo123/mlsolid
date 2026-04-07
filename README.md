@@ -29,6 +29,7 @@ Already generated gRPC SDKs for multiple languages are available to download usi
 * Experiment tracking with metrics and artifacts
 * Model registry with versioning
 
+## Overview
 ### Solidash interface
 <img width="2550" height="1434" alt="Screenshot From 2026-04-07 01-23-17" src="https://github.com/user-attachments/assets/5ac18f1c-1581-49b9-b0c2-eaad37c2495c" />
 
