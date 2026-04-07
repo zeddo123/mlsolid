@@ -3,6 +3,7 @@ package grpcservice
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,6 +22,7 @@ import (
 
 type Service struct {
 	mlsolidv1grpc.UnimplementedMlsolidServiceServer
+
 	Controller *controllers.Controller
 }
 
@@ -80,7 +82,7 @@ func (s *Service) CreateRun(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	run := types.NewRun(req.RunId, req.ExperimentId)
+	run := types.NewRun(req.GetRunId(), req.GetExperimentId())
 
 	err := s.Controller.CreateRun(ctx, run)
 	if err != nil {
@@ -95,7 +97,7 @@ func (s *Service) Run(ctx context.Context, req *mlsolidv1.RunRequest) (*mlsolidv
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	run, err := s.Controller.Run(ctx, req.RunId)
+	run, err := s.Controller.Run(ctx, req.GetRunId())
 	if err != nil {
 		return nil, ParseError(err)
 	}
@@ -128,7 +130,7 @@ func (s *Service) AddMetrics(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	err := s.Controller.AddMetrics(ctx, req.RunId, parseGrpcMetric(req.Metrics))
+	err := s.Controller.AddMetrics(ctx, req.GetRunId(), parseGrpcMetric(req.GetMetrics()))
 	if err != nil {
 		return nil, ParseError(err)
 	}
@@ -141,7 +143,7 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 		return status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	artifact, body, err := s.Controller.Artifact(stream.Context(), req.RunId, req.ArtifactName)
+	artifact, body, err := s.Controller.Artifact(stream.Context(), req.GetRunId(), req.GetArtifactName())
 	if err != nil {
 		return ParseError(err)
 	}
@@ -154,7 +156,7 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 		Metadata: &mlsolidv1.MetaData{
 			Name:  artifact.Name,
 			Type:  string(artifact.ContentType),
-			RunId: req.RunId,
+			RunId: req.GetRunId(),
 		},
 	}})
 	if err != nil {
@@ -165,7 +167,7 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 
 	for {
 		_, err := body.Read(buffer)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			eof = true
 		} else if err != nil {
 			return status.Error(codes.Internal, "could not read artifact into buffer")
@@ -199,32 +201,32 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 
 	for {
 		request, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 
-		switch request.Request.(type) {
+		switch request.GetRequest().(type) {
 		case *mlsolidv1.AddArtifactRequest_Metadata:
-			metadata, ok := request.Request.(*mlsolidv1.AddArtifactRequest_Metadata)
+			metadata, ok := request.GetRequest().(*mlsolidv1.AddArtifactRequest_Metadata)
 			if !ok {
 				return status.Errorf(codes.InvalidArgument, "could not read metadata")
 			}
 
-			runID = metadata.Metadata.RunId
-			artifactName = metadata.Metadata.Name
+			runID = metadata.Metadata.GetRunId()
+			artifactName = metadata.Metadata.GetName()
 
-			contentType = metadata.Metadata.Type
+			contentType = metadata.Metadata.GetType()
 			if !types.IsValidContentType(contentType) {
 				return status.Error(codes.InvalidArgument, "unknown content type for artifact")
 			}
 
 		case *mlsolidv1.AddArtifactRequest_Content:
-			content, ok := request.Request.(*mlsolidv1.AddArtifactRequest_Content)
+			content, ok := request.GetRequest().(*mlsolidv1.AddArtifactRequest_Content)
 			if !ok {
 				break
 			}
 
-			_, err = buf.Write(content.Content.Content)
+			_, err = buf.Write(content.Content.GetContent())
 			if err != nil {
 				return status.Errorf(codes.Internal, "could not write data chunk %v", err)
 			}
@@ -255,7 +257,7 @@ func (s *Service) CreateModelRegistry(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	err := s.Controller.CreateModelRegistry(ctx, req.Name)
+	err := s.Controller.CreateModelRegistry(ctx, req.GetName())
 	if err != nil {
 		return nil, ParseError(err)
 	}
@@ -270,7 +272,7 @@ func (s *Service) ModelRegistry(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	registry, err := s.Controller.ModelRegistry(ctx, req.Name)
+	registry, err := s.Controller.ModelRegistry(ctx, req.GetName())
 	if err != nil {
 		return nil, ParseError(err)
 	}
@@ -285,7 +287,7 @@ func (s *Service) AddModelEntry(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	err := s.Controller.AddArtifactToRegistry(ctx, req.Name, req.RunId, req.ArtifactId, req.Tags...)
+	err := s.Controller.AddArtifactToRegistry(ctx, req.GetName(), req.GetRunId(), req.GetArtifactId(), req.GetTags()...)
 	if err != nil {
 		return nil, ParseError(err)
 	}
@@ -300,7 +302,7 @@ func (s *Service) TaggedModel(ctx context.Context, req *mlsolidv1.TaggedModelReq
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	entry, err := s.Controller.TaggedModel(ctx, req.Name, req.Tag)
+	entry, err := s.Controller.TaggedModel(ctx, req.GetName(), req.GetTag())
 	if err != nil {
 		return nil, ParseError(err)
 	}
@@ -320,7 +322,7 @@ func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 		return status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	entry, err := s.Controller.TaggedModel(stream.Context(), req.Name, req.Tag)
+	entry, err := s.Controller.TaggedModel(stream.Context(), req.GetName(), req.GetTag())
 	if err != nil {
 		return ParseError(err)
 	}
@@ -333,7 +335,7 @@ func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 	err = stream.Send(&mlsolidv1.StreamTaggedModelResponse{
 		Response: &mlsolidv1.StreamTaggedModelResponse_Metadata{
 			Metadata: &mlsolidv1.MetaData{
-				Name: fmt.Sprintf("%s_%s_%s", req.Name, req.Tag, fileName),
+				Name: fmt.Sprintf("%s_%s_%s", req.GetName(), req.GetTag(), fileName),
 				Type: string(types.ModelContentType),
 			},
 		},
@@ -350,7 +352,7 @@ func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 
 	for {
 		_, err := body.Read(buffer)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 
@@ -378,7 +380,7 @@ func (s *Service) TagModel(ctx context.Context, req *mlsolidv1.TagModelRequest) 
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	err := s.Controller.TagModel(ctx, req.Name, int(req.Version), req.Tags...)
+	err := s.Controller.TagModel(ctx, req.GetName(), int(req.GetVersion()), req.GetTags()...)
 	if err != nil {
 		return nil, ParseError(err)
 	}

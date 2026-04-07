@@ -1,6 +1,8 @@
 package solid
 
 import (
+	"errors"
+
 	"github.com/spf13/viper"
 )
 
@@ -50,7 +52,8 @@ func LoadConfig(path string) (Config, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
 			return config, err
 		}
 	}

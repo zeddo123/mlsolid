@@ -20,7 +20,7 @@ func TestGenericMetric(t *testing.T) {
 		assert.Len(t, m.UnCommited(), 2)
 		assert.Contains(t, m.UnCommited(), "path3")
 		assert.Contains(t, m.UnCommited(), "path4")
-		assert.Equal(t, m.LastVal(), "path2")
+		assert.Equal(t, "path2", m.LastVal())
 	})
 
 	t.Run("no_uncommitted_values_after_committing_them", func(t *testing.T) {
@@ -33,8 +33,8 @@ func TestGenericMetric(t *testing.T) {
 		m.Add("path4")
 		m.Commit()
 
-		assert.Len(t, m.UnCommited(), 0)
-		assert.Equal(t, m.LastVal(), "path4")
+		assert.Empty(t, m.UnCommited())
+		assert.Equal(t, "path4", m.LastVal())
 	})
 
 	t.Run("new_values_can_be_added_after_committing", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestGenericMetric(t *testing.T) {
 		m.Commit()
 		m.Commit()
 
-		assert.Len(t, m.UnCommited(), 0)
+		assert.Empty(t, m.UnCommited())
 		assert.Equal(t, m.LastVal(), 0.6)
 	})
 }
@@ -72,7 +72,7 @@ func TestNewGenericMetric(t *testing.T) {
 	t.Run("new_metric_name_is_normalized", func(t *testing.T) {
 		m := types.NewGenericMetric[int]("M  S E", 10)
 
-		assert.Equal(t, m.Name(), "m-s-e")
+		assert.Equal(t, "m-s-e", m.Name())
 	})
 }
 

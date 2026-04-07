@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
@@ -86,7 +87,7 @@ func (r *RedisStore) runTx(ctx context.Context, fn func(tx *redis.Tx) error,
 			return nil
 		}
 
-		if err == redis.TxFailedErr {
+		if errors.Is(err, redis.TxFailedErr) {
 			continue
 		}
 
@@ -105,7 +106,7 @@ func (r *RedisStore) scanKeys(ctx context.Context, pattern string) ([]string, er
 		keys = append(keys, iter.Val())
 	}
 
-	if err := iter.Err(); err != redis.Nil && err != nil {
+	if err := iter.Err(); !errors.Is(err, redis.Nil) && err != nil {
 		return nil, types.NewInternalErr("could not retrieve keys")
 	}
 

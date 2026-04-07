@@ -69,7 +69,7 @@ func (m ModelRegistry) ModelByVersion(version int) (ModelEntry, error) {
 }
 
 // Add registers a model checkpoint with a highest version number.
-// Additional tags can be supplied such (`latest`, `prod`, `dev`)
+// Additional tags can be supplied such (`latest`, `prod`, `dev`).
 func (m *ModelRegistry) Add(url string, tags ...string) {
 	version := len(m.Models) + 1
 

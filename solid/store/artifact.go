@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -70,7 +69,7 @@ func (r *RedisStore) setArtifact(ctx context.Context, p redis.Pipeliner,
 }
 
 func (r *RedisStore) Artifacts(ctx context.Context, runID string) (map[string]types.SavedArtifact, error) {
-	keys, err := r.scanKeys(ctx, fmt.Sprintf("artifact:*:%s", runID))
+	keys, err := r.scanKeys(ctx, "artifact:*:"+runID)
 	if err != nil {
 		return nil, err
 	}

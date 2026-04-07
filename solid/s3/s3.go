@@ -116,7 +116,7 @@ func (s Store) UploadFile(ctx context.Context, key string, body io.Reader) (stri
 	return key, nil
 }
 
-// DownloadFile
+// DownloadFile.
 func (s Store) DownloadFile(ctx context.Context, key string) (io.ReadCloser, error) {
 	if s.client == nil {
 		return nil, types.ErrNotInitialized
