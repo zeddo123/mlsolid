@@ -10,29 +10,41 @@ import (
 )
 
 const (
+	// ExpInfoKeyPattern is a pattern to a key that holds
+	// information on experiments.
+	ExpInfoKeyPattern = "exp:info:%s"
+
+	// ExpKeyPattern is a pattern to an experiment key
+	// that holds index of all runs linked to that exp.
 	ExpKeyPattern = "exp:%s"
+
 	// RunKeyPattern pattern of a Run's key
 	// Example:
 	// run:linear-regression
 	RunKeyPattern = "run:%s"
+
 	// MetricKeyPattern pattern of a metric metric:<metric_name>:<run_id>
 	// Example
 	// metric:mse:linear-regression
 	MetricKeyPattern = "metric:%s:%s"
+
 	// ArtifactKeyPattern pattern of a artifact's key
 	// Example
 	// artifact:logs:linear-regression
 	ArtifactKeyPattern = "artifact:%s:%s"
 
 	ModelRegistryInfoKeyPattern = "info:registry:%s"
+
 	// ModelRegistryKeyPattern pattern a model registry key
 	// Example
 	// registry:yolov12
 	ModelRegistryKeyPattern = "registry:%s"
+
 	// ModelRegistryTagsKeyPattern pattern a model registry's tags
 	// Example
 	// tag:registry:yolov12 -> [prod, latest, ...]
 	ModelRegistryTagsKeyPattern = "tag:registry:%s"
+
 	// ModelRegistryTagKeyPattern pattern a model registry tag
 	// Example
 	// tag:registry:yolov12:prod
@@ -47,6 +59,10 @@ type RedisStore struct {
 
 func (r *RedisStore) makeExpKey(id string) string {
 	return fmt.Sprintf(ExpKeyPattern, id)
+}
+
+func (r *RedisStore) makeExperimentInfoKey(expID string) string {
+	return fmt.Sprintf(ExpInfoKeyPattern, expID)
 }
 
 func (r *RedisStore) makeRunKey(name string) string {
