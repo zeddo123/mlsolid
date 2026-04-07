@@ -142,3 +142,33 @@ func TestModelRegistryFlow(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestExpInfo(t *testing.T) {
+	t.Run("add_description_to_exp", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		expID := "exp_info_test"
+		desc := "some_new_description"
+
+		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
+		run := types.NewRun("exp_info_run", expID)
+
+		err := controller.CreateRun(t.Context(), run)
+		require.NoError(t, err)
+
+		info, err := controller.ExpInfo(t.Context(), expID)
+		require.NoError(t, err)
+		require.Zero(t, info)
+
+		// Act
+		err = controller.SetExpInfo(t.Context(), expID, types.ExperimentInfo{
+			Description: desc,
+		})
+		require.NoError(t, err)
+
+		info, err = controller.ExpInfo(t.Context(), expID)
+		require.NoError(t, err)
+		assert.Equal(t, desc, info.Description)
+	})
+}

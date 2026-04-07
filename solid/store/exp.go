@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
@@ -82,4 +83,33 @@ func (r *RedisStore) Exps(ctx context.Context) ([]string, error) {
 	}
 
 	return ids, nil
+}
+
+// ExpInfo pulls an experiment's info data.
+func (r *RedisStore) ExpInfo(ctx context.Context, expID string) (types.ExperimentInfo, error) {
+	key := r.makeExperimentInfoKey(expID)
+
+	m, err := r.Client.HGetAll(ctx, key).Result()
+	if err != nil {
+		return types.ExperimentInfo{}, fmt.Errorf("could not find exp info: %w", err)
+	}
+
+	return types.NewExperimentInfo(m), nil
+}
+
+// SetExpInfo sets an experiment's info data. returns non-nil error if operation was
+// not successful.
+func (r *RedisStore) SetExpInfo(ctx context.Context, expID string, info types.ExperimentInfo) error {
+	if expID == "" {
+		return errors.New("invalid expID") //nolint: err113
+	}
+
+	key := r.makeExperimentInfoKey(expID)
+
+	err := r.Client.HSet(ctx, key, info).Err()
+	if err != nil {
+		return fmt.Errorf("could not save experiment info: %w", err)
+	}
+
+	return nil
 }
