@@ -321,7 +321,7 @@ func (r *RedisStore) updateModelRegistry(ctx context.Context, p redis.Pipeliner,
 func (r *RedisStore) ModelRegistriesID(ctx context.Context) ([]string, error) {
 	keys, err := r.scanKeys(ctx, ModelRegistryMatchPattern)
 	if err != nil {
-		return nil, fmt.Errorf("could not pull registry keys: %w", err)
+		return nil, fmt.Errorf("could query redis keys: %w", err)
 	}
 
 	for i := range keys {

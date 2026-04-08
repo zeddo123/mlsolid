@@ -293,8 +293,11 @@ func (s *Service) AddModelEntry(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
 	}
 
-	err := s.Controller.AddArtifactToRegistry(ctx, req.GetName(), req.GetRunId(), req.GetArtifactId(), req.GetTags()...)
+	err := s.Controller.AddArtifactToRegistry(ctx,
+		req.GetName(), req.GetRunId(), req.GetArtifactId(), req.GetTags()...)
 	if err != nil {
+		log.Println(err)
+
 		return nil, ParseError(err)
 	}
 
