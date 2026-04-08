@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"time"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/zeddo123/mlsolid/solid/types"
 )
@@ -62,7 +60,7 @@ func experiment(ctx *fiber.Ctx) error {
 		if r != nil {
 			runsInfo[i] = runInfo{
 				RunID:     r.Name,
-				Timestamp: r.Timestamp.Format(time.RFC3339),
+				CreatedAt: r.Timestamp,
 				Color:     r.Color,
 			}
 		}

@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -36,7 +39,7 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 	// Setting model info under key "info:registry:<name>"
 	p.HSet(ctx, infoKey, map[string]string{
 		"Name":      m.Name,
-		"Timestamp": strconv.FormatInt(time.Now().UnixMilli(), 10),
+		"Timestamp": m.Timestamp.Format(time.RFC3339),
 	})
 
 	// Setting model entries under key "registry:<name>"
@@ -110,7 +113,13 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 		return nil, types.NewInternalErr(err.Error())
 	}
 
-	registry := types.NewModelRegistry(info["Name"])
+	t, err := time.Parse(time.RFC3339, info["Timestamp"])
+	if err != nil {
+		// TODO: log error
+		t = time.Now()
+	}
+
+	registry := types.NewModelRegistryWithTime(info["Name"], t)
 
 	for _, e := range entries {
 		var entry types.ModelEntry
@@ -306,4 +315,50 @@ func (r *RedisStore) updateModelRegistry(ctx context.Context, p redis.Pipeliner,
 	}
 
 	return nil
+}
+
+// ModelRegistriesID returns a slice of all known registry ids.
+func (r *RedisStore) ModelRegistriesID(ctx context.Context) ([]string, error) {
+	keys, err := r.scanKeys(ctx, ModelRegistryMatchPattern)
+	if err != nil {
+		return nil, fmt.Errorf("could not pull registry keys: %w", err)
+	}
+
+	for i := range keys {
+		keys[i], _ = strings.CutPrefix(keys[i], "registry:")
+	}
+
+	return keys, nil
+}
+
+// ModelRegistries returns a slice of all known registries.
+func (r *RedisStore) ModelRegistries(ctx context.Context) ([]*types.ModelRegistry, error) {
+	keys, err := r.scanKeys(ctx, ModelRegistryMatchPattern)
+	if err != nil {
+		return nil, fmt.Errorf("could not pull registry keys: %w", err)
+	}
+
+	var wg sync.WaitGroup
+
+	registries := make([]*types.ModelRegistry, len(keys))
+
+	for i := range keys {
+		id, _ := strings.CutPrefix(keys[i], "registry:")
+
+		// TODO: optimize model registry by using redis transactions.
+		wg.Go(func() {
+			reg, err := r.ModelRegistry(ctx, id)
+			if err != nil {
+				fmt.Println("could not find model registry", id)
+
+				return
+			}
+
+			registries[i] = reg
+		})
+	}
+
+	wg.Wait()
+
+	return registries, nil
 }

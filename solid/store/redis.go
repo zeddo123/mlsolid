@@ -33,12 +33,16 @@ const (
 	// artifact:logs:linear-regression
 	ArtifactKeyPattern = "artifact:%s:%s"
 
+	// ModelRegistryInfoKeyPattern pattern of model registry's data info value.
 	ModelRegistryInfoKeyPattern = "info:registry:%s"
 
-	// ModelRegistryKeyPattern pattern a model registry key
+	// ModelRegistryKeyPattern pattern of a model registry key
 	// Example
-	// registry:yolov12
+	// registry:yolov12 maps to a list of model entries
 	ModelRegistryKeyPattern = "registry:%s"
+
+	// ModelRegistryMatchPattern match pattern for all model registries.
+	ModelRegistryMatchPattern = "registry:*"
 
 	// ModelRegistryTagsKeyPattern pattern a model registry's tags
 	// Example

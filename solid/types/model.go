@@ -3,26 +3,37 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type ModelEntry struct {
-	URL  string
-	Tags []string
-	Name string
+	URL       string    `json:"url"`
+	Tags      []string  `json:"tags"`
+	Name      string    `json:"name"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type ModelRegistry struct {
-	Name   string
-	Models []ModelEntry
-	Tags   map[string][]int
+	Name      string
+	Models    []ModelEntry
+	Tags      map[string][]int
+	Timestamp time.Time
 }
 
 func NewModelRegistry(name string) *ModelRegistry {
 	return &ModelRegistry{
-		Name:   name,
-		Models: make([]ModelEntry, 0),
-		Tags:   make(map[string][]int),
+		Name:      name,
+		Models:    make([]ModelEntry, 0),
+		Tags:      make(map[string][]int),
+		Timestamp: time.Now(),
 	}
+}
+
+func NewModelRegistryWithTime(name string, t time.Time) *ModelRegistry {
+	r := NewModelRegistry(name)
+	r.Timestamp = t
+
+	return r
 }
 
 func (m ModelRegistry) VersionTag(version int) string {

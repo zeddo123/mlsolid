@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/zeddo123/mlsolid/solid/types"
 )
@@ -67,4 +68,14 @@ func (c *Controller) TagModel(ctx context.Context, registryName string, version 
 	}
 
 	return c.Redis.UpdateModelRegistry(ctx, *registry)
+}
+
+// ModelRegistriesID retrieves all known model registry ids.
+func (c *Controller) ModelRegistriesID(ctx context.Context) ([]string, error) {
+	ids, err := c.Redis.ModelRegistriesID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("could not pull registry ids: %w", err)
+	}
+
+	return ids, nil
 }

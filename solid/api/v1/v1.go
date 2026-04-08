@@ -15,6 +15,7 @@ func ctxController(ctx *fiber.Ctx) *controllers.Controller {
 	panic("no controller found in ctx")
 }
 
+// BuildRoutes builds v1 endpoint routes.
 func BuildRoutes(f *fiber.App) error {
 	v1 := f.Group("/v1")
 
@@ -26,6 +27,9 @@ func BuildRoutes(f *fiber.App) error {
 
 	v1.Get("/exp/:id/artifacts", artifacts)
 	v1.Get("artifact/:rid/:aid", artifact)
+
+	v1.Get("/registries", registries)
+	v1.Get("/registry/:id", registry)
 
 	return nil
 }
