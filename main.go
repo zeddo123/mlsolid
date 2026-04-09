@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/zeddo123/mlsolid/solid"
@@ -19,7 +19,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("loaded config", config)
+	log.Println("[MLSOLID] Configuration has been loaded")
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     config.RedisAddr,
