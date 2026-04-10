@@ -83,6 +83,7 @@ func addModelArtifact(client mlsolidv1grpc.MlsolidServiceClient, runID, modelNam
 	chunck := 1024
 	buffer := make([]byte, chunck)
 
+	log.Printf("[populate] Sending chunks artifact... \n")
 	for {
 		_, err := resp.Body.Read(buffer)
 		if errors.Is(err, io.EOF) {
@@ -90,6 +91,7 @@ func addModelArtifact(client mlsolidv1grpc.MlsolidServiceClient, runID, modelNam
 		}
 
 		if err != nil {
+			log.Printf("[ERROR] [populate] could not read next chuck... \n")
 			panic(err)
 		}
 
@@ -99,7 +101,8 @@ func addModelArtifact(client mlsolidv1grpc.MlsolidServiceClient, runID, modelNam
 			},
 		}})
 		if err != nil {
-			panic(err)
+			log.Printf("[ERROR] [populate] could not send next chuck... \n")
+			break
 		}
 	}
 

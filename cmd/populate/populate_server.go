@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
+	mlsolidv1 "buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go/mlsolid/v1"
 	"github.com/anandvarma/namegen"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/grpc"
@@ -38,7 +39,14 @@ func main() {
 
 			client := mlsolidv1grpc.NewMlsolidServiceClient(conn)
 
-			createModelRegistry(client, "Yolo Prod")
+			resp, err := client.Experiments(context.Background(), &mlsolidv1.ExperimentsRequest{})
+			if err != nil {
+				panic(err)
+			}
+
+			log.Println("[populate] getting experiments... ", resp.ExpIds)
+
+			createModelRegistry(client, "Yolo Prod") //nolint: contextcheck
 
 			maxExps := 3
 			maxRuns := 12
