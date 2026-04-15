@@ -1,3 +1,4 @@
+// Package grpcservice implements the grpc server methods
 package grpcservice
 
 import (
@@ -8,10 +9,13 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"strings"
 
 	mlsolidv1grpc "buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
 	mlsolidv1 "buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go/mlsolid/v1"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
+	"github.com/rs/zerolog"
 	"github.com/zeddo123/mlsolid/solid/controllers"
 	"github.com/zeddo123/mlsolid/solid/types"
 	"google.golang.org/grpc"
@@ -26,19 +30,32 @@ type Service struct {
 	Controller *controllers.Controller
 }
 
+// StartServer starts a grpc server instance
 func StartServer(port string, ctrl *controllers.Controller) {
-	l, err := net.Listen("tcp", ":"+port)
+	l, err := net.Listen("tcp", ":"+port) //nolint: noctx
 	if err != nil {
 		log.Println("could not listen to port", port)
 
 		panic(err)
 	}
 
-	service := Service{
+	service := Service{ //nolint: exhaustruct
 		Controller: ctrl,
 	}
 
-	server := grpc.NewServer()
+	logger := zerolog.New(os.Stderr)
+	opts := []logging.Option{
+		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
+	}
+
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			logging.UnaryServerInterceptor(interceptorLogger(logger), opts...),
+		),
+		grpc.ChainStreamInterceptor(
+			logging.StreamServerInterceptor(interceptorLogger(logger), opts...),
+		),
+	)
 
 	mlsolidv1grpc.RegisterMlsolidServiceServer(server, &service)
 
