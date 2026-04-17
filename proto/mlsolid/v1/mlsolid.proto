@@ -232,11 +232,10 @@ message SetBenchmarkContainerResponse {
   bool set = 1;
 }
 
-
 message BenchmarkRequest {
   string benchmark_name = 1;
 }
-message BenchmarkResponse{
+message BenchmarkResponse {
   string name = 1;
   bool eager_start = 2;
   bool auto_tag = 3;
@@ -249,7 +248,7 @@ message BenchmarkResponse{
   bool from_s3 = 10;
 }
 
-message CreateBenchmarkRequest{
+message CreateBenchmarkRequest {
   string name = 1;
   bool eager_start = 2;
   bool auto_tag = 3;
@@ -262,18 +261,18 @@ message CreateBenchmarkRequest{
   bool from_s3 = 10;
 }
 
-message CreateBenchmarkResponse{
+message CreateBenchmarkResponse {
   bool created = 1;
 }
 
-message ToggleBenchmarkRequest{
+message ToggleBenchmarkRequest {
   bool paused = 1;
 }
-message ToggleBenchmarkResponse{
+message ToggleBenchmarkResponse {
   bool paused = 1;
 }
 
-message UpdateBenchmarkRequest{
+message UpdateBenchmarkRequest {
   optional string name = 1;
   optional bool auto_tag = 2;
   optional string tag = 3;
@@ -283,7 +282,7 @@ message UpdateBenchmarkRequest{
   repeated string remove_metrics = 7;
   repeated string decision_metric = 8;
 }
-message UpdateBenchmarkResponse{
+message UpdateBenchmarkResponse {
   string name = 1;
   bool auto_tag = 2;
   string tag = 3;
@@ -292,15 +291,15 @@ message UpdateBenchmarkResponse{
   string decision_metric = 6;
 }
 
-message DeleteBenchmarkRequest{
+message DeleteBenchmarkRequest {
   string name = 1;
 }
 
-message DeleteBenchmarkResponse{
+message DeleteBenchmarkResponse {
   bool deleted = 1;
 }
 
-message BenchmarkRunsRequest{
+message BenchmarkRunsRequest {
   string benchmark_name = 1;
 }
 message BenchmarkRunsResponse {
@@ -311,16 +310,16 @@ message Metrics {
   map<string, float> metrics = 1;
 }
 
-message BestModelRequest{
+message BestModelRequest {
   string benchmark_name = 1;
   string metric = 2;
 }
 
-message BestModelResponse{
+message BestModelResponse {
   map<string, int64> best_models = 1;
 }
 
-message BenchmarksRequest{}
-message BenchmarksResponse{
+message BenchmarksRequest {}
+message BenchmarksResponse {
   repeated string benchmarks = 1;
 }
