@@ -47,6 +47,17 @@ service MlsolidService {
   rpc TaggedModel(TaggedModelRequest) returns (TaggedModelResponse);
   rpc StreamTaggedModel(StreamTaggedModelRequest) returns (stream StreamTaggedModelResponse);
   rpc TagModel(TagModelRequest) returns (TagModelResponse);
+  rpc SetBenchmarkContainer(SetBenchmarkContainerRequest) returns (SetBenchmarkContainerResponse);
+
+  // Benchmarks
+  rpc Benchmark(BenchmarkRequest) returns (BenchmarkResponse);
+  rpc CreateBenchmark(CreateBenchmarkRequest) returns (CreateBenchmarkResponse);
+  rpc ToggleBenchmark(ToggleBenchmarkRequest) returns (ToggleBenchmarkResponse);
+  rpc UpdateBenchmark(UpdateBenchmarkRequest) returns (UpdateBenchmarkResponse);
+  rpc DeleteBenchmark(DeleteBenchmarkRequest) returns (DeleteBenchmarkResponse);
+  rpc BenchmarkRuns(BenchmarkRunsRequest) returns (BenchmarkRunsResponse);
+  rpc BestModel(BestModelRequest) returns (BestModelResponse);
+  rpc Benchmarks(BenchmarksRequest) returns (BenchmarksResponse);
 }
 
 message Metric {
@@ -210,4 +221,106 @@ message TagModelRequest {
 
 message TagModelResponse {
   bool added = 1;
+}
+
+message SetBenchmarkContainerRequest {
+  string registry_name = 1;
+  string container_url = 2;
+}
+
+message SetBenchmarkContainerResponse {
+  bool set = 1;
+}
+
+
+message BenchmarkRequest {
+  string benchmark_name = 1;
+}
+message BenchmarkResponse{
+  string name = 1;
+  bool eager_start = 2;
+  bool auto_tag = 3;
+  string tag = 4;
+  repeated string model_registries = 5;
+  repeated string metrics = 6;
+  string decision_metric = 7;
+  string dataset_name = 8;
+  string dataset_url = 9;
+  bool from_s3 = 10;
+}
+
+message CreateBenchmarkRequest{
+  string name = 1;
+  bool eager_start = 2;
+  bool auto_tag = 3;
+  string tag = 4;
+  repeated string model_registries = 5;
+  repeated string metrics = 6;
+  string decision_metric = 7;
+  string dataset_name = 8;
+  string dataset_url = 9;
+  bool from_s3 = 10;
+}
+
+message CreateBenchmarkResponse{
+  bool created = 1;
+}
+
+message ToggleBenchmarkRequest{
+  bool paused = 1;
+}
+message ToggleBenchmarkResponse{
+  bool paused = 1;
+}
+
+message UpdateBenchmarkRequest{
+  optional string name = 1;
+  optional bool auto_tag = 2;
+  optional string tag = 3;
+  repeated string add_registires = 4;
+  repeated string remove_registries = 5;
+  repeated string add_metrics = 6;
+  repeated string remove_metrics = 7;
+  repeated string decision_metric = 8;
+}
+message UpdateBenchmarkResponse{
+  string name = 1;
+  bool auto_tag = 2;
+  string tag = 3;
+  repeated string model_registries = 4;
+  repeated string metrics = 5;
+  string decision_metric = 6;
+}
+
+message DeleteBenchmarkRequest{
+  string name = 1;
+}
+
+message DeleteBenchmarkResponse{
+  bool deleted = 1;
+}
+
+message BenchmarkRunsRequest{
+  string benchmark_name = 1;
+}
+message BenchmarkRunsResponse {
+  map<string, Metrics> runs = 1;
+}
+
+message Metrics {
+  map<string, float> metrics = 1;
+}
+
+message BestModelRequest{
+  string benchmark_name = 1;
+  string metric = 2;
+}
+
+message BestModelResponse{
+  map<string, int64> best_models = 1;
+}
+
+message BenchmarksRequest{}
+message BenchmarksResponse{
+  repeated string benchmarks = 1;
 }
