@@ -87,28 +87,25 @@ func (e *Engine) consumeEvent(ctx context.Context, cli *client.Client, event *ty
 		return err
 	}
 
-	if false {
-		// Load dataset if not present
-		datasetPath := fmt.Sprintf("/mlsolid/datasets/%s", event.DatasetName)
-		if _, err := os.Stat(datasetPath); errors.Is(err, os.ErrNotExist) {
-			// Downloading dataset
-			if event.FromS3 {
-				err := PullDatasetFromS3(event.DatasetURL, datasetPath)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := PullDataset(ctx, event.DatasetURL, datasetPath)
-				if err != nil {
-					return err
-				}
+	// Load dataset if not present
+	datasetPath := fmt.Sprintf("/mlsolid/datasets/%s", event.DatasetName)
+	if _, err := os.Stat(datasetPath); errors.Is(err, os.ErrNotExist) {
+		// Downloading dataset
+		if event.FromS3 {
+			err := PullDatasetFromS3(event.DatasetURL, datasetPath)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := PullDataset(ctx, event.DatasetURL, datasetPath)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
 	// Load model if not present
 	checkpointPath := "/mlsolid/checkpoints/model.pt"
-	datasetPath := "/mlsolid/datasets/dataset"
 
 	result, err := RunContainer(ctx, event.DockerImage,
 		event.DatasetName, datasetPath, checkpointPath)
