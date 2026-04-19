@@ -3,6 +3,7 @@ package bengine
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,7 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
+	"time"
 
 	"github.com/docker/cli/opts"
 	ctr "github.com/docker/go-sdk/container"
@@ -169,13 +170,13 @@ func (e *Engine) Start(ctx context.Context) {
 			e.l.Info().
 				Str("benchmark", event.BenchName).
 				Str("registry", event.Registry).
-				Str("version", event.Version).
+				Int64("version", event.Version).
 				Str("image", event.DockerImage).
 				Str("model", event.ModelURL).
 				Str("dataset", event.DatasetName).
 				Str("datasetURL", event.DatasetURL).
-				Str("fromS3", strconv.FormatBool(event.FromS3)).
-				Str("autoTag", strconv.FormatBool(event.AutoTag)).
+				Bool("fromS3", event.FromS3).
+				Bool("autoTag", event.AutoTag).
 				Str("tag", event.Tag).
 				Msg("received benchmark event")
 
@@ -224,30 +225,13 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 
 	e.l.Info().Str("result", result).Msg("container exited successfully")
 
-	return nil
-}
+	if e.store == nil {
+		e.l.Info().Str("result", result).Msg("Redis store not configured skipping")
 
-func (e *Engine) pullImage(ctx context.Context, cli *client.Client, image string) error {
-	opts := client.ImagePullOptions{} //nolint: exhaustruct
-
-	if e.registryUsername != "" {
-		authStr, err := authconfig.Encode(registry.AuthConfig{ //nolint: exhaustruct
-			Username: e.registryUsername,
-			Password: e.registryPassword,
-		})
-		if err != nil {
-			e.l.Error().Err(err).Msg("could not encode docker registry creds")
-		} else {
-			opts.RegistryAuth = authStr
-		}
+		return nil
 	}
 
-	_, err := cli.ImagePull(ctx, image, opts)
-	if err != nil {
-		return fmt.Errorf("could not pull image: %w", err)
-	}
-
-	return nil
+	return e.RecordRun(ctx, event, result)
 }
 
 // PullDatasetFromS3 pulls a dataset from a S3 object.
@@ -388,4 +372,58 @@ func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPa
 	}
 
 	return string(results), nil
+}
+
+// RecordRun records a run into the store.
+func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, result string) error {
+	metrics := make(map[string]float64)
+
+	e.l.Debug().Str("result", result).Msg("unmarshalling result")
+
+	err := json.Unmarshal([]byte(result), &metrics)
+	if err != nil {
+		return fmt.Errorf("could not unmarshal results: %w", err)
+	}
+
+	e.l.Info().
+		Str("result", result).
+		Str("benchName", event.BenchName).
+		Str("Registry", event.Registry).
+		Int("Version", int(event.Version)).
+		Msg("recording bench run into the store")
+
+	err = e.store.RecordRuns(ctx, event.BenchName, []types.BenchRun{{
+		Registry:  event.Registry,
+		Version:   event.Version,
+		Metrics:   metrics,
+		Timestamp: time.Now(),
+	}})
+	if err != nil {
+		return fmt.Errorf("could not record run into the store: %w", err)
+	}
+
+	return nil
+}
+
+func (e *Engine) pullImage(ctx context.Context, cli *client.Client, image string) error {
+	opts := client.ImagePullOptions{} //nolint: exhaustruct
+
+	if e.registryUsername != "" {
+		authStr, err := authconfig.Encode(registry.AuthConfig{ //nolint: exhaustruct
+			Username: e.registryUsername,
+			Password: e.registryPassword,
+		})
+		if err != nil {
+			e.l.Error().Err(err).Msg("could not encode docker registry creds")
+		} else {
+			opts.RegistryAuth = authStr
+		}
+	}
+
+	_, err := cli.ImagePull(ctx, image, opts)
+	if err != nil {
+		return fmt.Errorf("could not pull image: %w", err)
+	}
+
+	return nil
 }

@@ -29,7 +29,7 @@ type BenchRun struct {
 type BenchEvent struct {
 	BenchName   string
 	Registry    string
-	Version     string
+	Version     int64
 	DockerImage string
 	ModelURL    string
 	DatasetName string
