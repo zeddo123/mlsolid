@@ -31,7 +31,7 @@ func (r *RedisStore) SetRun(ctx context.Context, run types.Run) error {
 		return nil
 	}
 
-	return r.runTx(ctx, fn, TransactionMaxTries, key)
+	return r.runTx(ctx, fn, transactionMaxTries, key)
 }
 
 // RunExists checks if a run exists in the redis store.

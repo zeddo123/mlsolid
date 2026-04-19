@@ -39,12 +39,12 @@ func main() {
 
 			client := mlsolidv1grpc.NewMlsolidServiceClient(conn)
 
-			resp, err := client.Experiments(context.Background(), &mlsolidv1.ExperimentsRequest{})
+			resp, err := client.Experiments(context.Background(), &mlsolidv1.ExperimentsRequest{}) //nolint: contextcheck
 			if err != nil {
 				panic(err)
 			}
 
-			log.Println("[populate] getting experiments... ", resp.ExpIds)
+			log.Println("[populate] getting experiments... ", resp.GetExpIds())
 
 			createModelRegistry(client, "Yolo Prod") //nolint: contextcheck
 

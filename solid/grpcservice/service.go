@@ -30,7 +30,7 @@ type Service struct {
 	Controller *controllers.Controller
 }
 
-// StartServer starts a grpc server instance
+// StartServer starts a grpc server instance.
 func StartServer(port string, ctrl *controllers.Controller) {
 	l, err := net.Listen("tcp", ":"+port) //nolint: noctx
 	if err != nil {

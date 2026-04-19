@@ -36,7 +36,7 @@ func createRun(client mlsolidv1grpc.MlsolidServiceClient, expID string) {
 	addModelArtifact(client, resp.GetRunId(), "yolo.pt")
 
 	tags := make([]string, 0, 1)
-	if rand.Intn(2) == 1 {
+	if rand.Intn(2) == 1 { //nolint: gosec, mnd
 		tags = append(tags, "latest")
 	}
 
@@ -56,11 +56,12 @@ func createRun(client mlsolidv1grpc.MlsolidServiceClient, expID string) {
 func addModelArtifact(client mlsolidv1grpc.MlsolidServiceClient, runID, modelName string) {
 	log.Printf("[populate]: adding model artifact... runId=%s artifact=%s \n", runID, modelName)
 
-	resp, err := http.Get("https://huggingface.co/Ultralytics/YOLO11/resolve/d3043e98a1ad0e2956728c13cf1e041e0fa4220f/yolo11s.pt")
+	resp, err := http.Get("https://huggingface.co/Ultralytics/YOLO11/resolve/d3043e98a1ad0e2956728c13cf1e041e0fa4220f/yolo11s.pt") //nolint: lll, noctx
 	if err != nil {
 		panic(err)
 	}
-	defer resp.Body.Close()
+
+	defer resp.Body.Close() //nolint: errcheck
 
 	log.Printf("[populate] Sending model artifact... \n")
 
@@ -84,6 +85,7 @@ func addModelArtifact(client mlsolidv1grpc.MlsolidServiceClient, runID, modelNam
 	buffer := make([]byte, chunck)
 
 	log.Printf("[populate] Sending chunks artifact... \n")
+
 	for {
 		_, err := resp.Body.Read(buffer)
 		if errors.Is(err, io.EOF) {
@@ -102,6 +104,7 @@ func addModelArtifact(client mlsolidv1grpc.MlsolidServiceClient, runID, modelNam
 		}})
 		if err != nil {
 			log.Printf("[ERROR] [populate] could not send next chuck... \n")
+
 			break
 		}
 	}
