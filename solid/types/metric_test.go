@@ -8,7 +8,11 @@ import (
 )
 
 func TestGenericMetric(t *testing.T) {
+	t.Parallel()
+
 	t.Run("only_new_values_are_uncommitted", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.GenericMetric[string]{
 			Key:    "paths",
 			Values: []string{"path1", "path2"},
@@ -24,6 +28,8 @@ func TestGenericMetric(t *testing.T) {
 	})
 
 	t.Run("no_uncommitted_values_after_committing_them", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.GenericMetric[string]{
 			Key:    "paths",
 			Values: []string{"path1", "path2"},
@@ -38,6 +44,8 @@ func TestGenericMetric(t *testing.T) {
 	})
 
 	t.Run("new_values_can_be_added_after_committing", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.GenericMetric[float64]{
 			Key:    "paths",
 			Values: []float64{0.23, 0.24},
@@ -49,10 +57,12 @@ func TestGenericMetric(t *testing.T) {
 		m.Add(0.7)
 
 		assert.Len(t, m.UnCommited(), 1)
-		assert.Equal(t, m.LastVal(), 0.6)
+		assert.InEpsilon(t, 0.6, m.LastVal(), 0.001)
 	})
 
 	t.Run("committing_multiple_times_has_same_effect", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.GenericMetric[float64]{
 			Key:    "paths",
 			Values: []float64{0.23, 0.24},
@@ -64,12 +74,16 @@ func TestGenericMetric(t *testing.T) {
 		m.Commit()
 
 		assert.Empty(t, m.UnCommited())
-		assert.Equal(t, m.LastVal(), 0.6)
+		assert.InEpsilon(t, 0.6, m.LastVal(), 0.001)
 	})
 }
 
 func TestNewGenericMetric(t *testing.T) {
+	t.Parallel()
+
 	t.Run("new_metric_name_is_normalized", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.NewGenericMetric[int]("M  S E", 10)
 
 		assert.Equal(t, "m-s-e", m.Name())
@@ -77,7 +91,11 @@ func TestNewGenericMetric(t *testing.T) {
 }
 
 func TestGenericMetricTypeReflection(t *testing.T) {
+	t.Parallel()
+
 	t.Run("type=metric/continuous", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.NewGenericMetric[float32]("mse", 2)
 
 		m.Add(12.33)
@@ -87,6 +105,8 @@ func TestGenericMetricTypeReflection(t *testing.T) {
 		assert.Equal(t, types.ContinuousMetric, m.Type())
 	})
 	t.Run("type=metric/multival", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.NewGenericMetric[string]("paths", 2)
 
 		m.AddVal("path/to/image/1")
@@ -96,6 +116,8 @@ func TestGenericMetricTypeReflection(t *testing.T) {
 		assert.Equal(t, types.MultiValueMetric, m.Type())
 	})
 	t.Run("type=metric/single-numeric", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.NewGenericMetric[float64]("best acc", 1)
 
 		m.AddVal(99.0)
@@ -104,6 +126,8 @@ func TestGenericMetricTypeReflection(t *testing.T) {
 		assert.Equal(t, types.SingleNumericMetric, m.Type())
 	})
 	t.Run("type=metric/single", func(t *testing.T) {
+		t.Parallel()
+
 		m := types.NewGenericMetric[string]("checkpoint", 1)
 
 		m.AddVal("/path/to/checkpoint")

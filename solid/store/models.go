@@ -23,7 +23,7 @@ func (r *RedisStore) CreateModelRegistry(ctx context.Context, m types.ModelRegis
 		return err
 	}
 
-	return r.runTx(ctx, fn, TransactionMaxTries, r.makeModelRegistryInfoKey(m.Name))
+	return r.runTx(ctx, fn, transactionMaxTries, r.makeModelRegistryInfoKey(m.Name))
 }
 
 func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner, m types.ModelRegistry) error {
@@ -38,8 +38,9 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 
 	// Setting model info under key "info:registry:<name>"
 	p.HSet(ctx, infoKey, map[string]string{
-		"Name":      m.Name,
-		"Timestamp": m.Timestamp.Format(time.RFC3339),
+		"Name":           m.Name,
+		"Timestamp":      m.Timestamp.Format(time.RFC3339),
+		"BenchmarkImage": m.BenchmarkImage,
 	})
 
 	// Setting model entries under key "registry:<name>"
@@ -120,6 +121,11 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 	}
 
 	registry := types.NewModelRegistryWithTime(info["Name"], t)
+
+	err = registry.SetBenchmarkImage(info["BenchmarkImage"])
+	if err != nil {
+		// TODO: log error
+	}
 
 	for _, e := range entries {
 		var entry types.ModelEntry
@@ -275,7 +281,7 @@ func (r *RedisStore) UpdateModelRegistry(ctx context.Context, m types.ModelRegis
 		return err
 	}
 
-	return r.runTx(ctx, fn, TransactionMaxTries, r.makeModelRegistryInfoKey(m.Name),
+	return r.runTx(ctx, fn, transactionMaxTries, r.makeModelRegistryInfoKey(m.Name),
 		r.makeModelRegistryKey(m.Name), r.makeModelRegistryTagsKey(m.Name))
 }
 

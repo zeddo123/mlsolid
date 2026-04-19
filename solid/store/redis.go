@@ -54,7 +54,31 @@ const (
 	// tag:registry:yolov12:prod
 	ModelRegistryTagKeyPattern = "tag:registry:%s:%s"
 
-	TransactionMaxTries = 10
+	// ModelRegistryBenchmarksIndexPattern (Set holding all linked benchmarks)
+	// form: index:registry:<registry-name>:benchs
+	ModelRegistryBenchmarksIndexPattern = "index:registry:%s:benchs"
+
+	// BenchmarksKey.
+	BenchmarksKey = "index:benchs"
+
+	// BenchmarkKeyPattern.
+	BenchmarkKeyPattern = "bench:%s"
+
+	// BenchmarkMetricsKeyPattern.
+	BenchmarkMetricsKeyPattern = "bench:%s:metrics"
+
+	// BenchmarkRegistriesKeyPattern.
+	BenchmarkRegistriesKeyPattern = "bench:%s:registries"
+
+	// BenchmarkRunsKeyPattern index used to pull all benchmark runs
+	// It follows this form: index:bench:<bench-name>:runs.
+	BenchmarkRunsKeyPattern = "index:bench:%s:runs"
+
+	// BenchmarkRunKeyPattern key pattern used to save a benchmark run
+	// It follows this order: bench:<bench-name>:run:<registry-name>:<version>.
+	BenchmarkRunKeyPattern = "bench:%s:run:%s:%d"
+
+	transactionMaxTries = 10
 )
 
 type RedisStore struct {
@@ -95,6 +119,30 @@ func (r *RedisStore) makeModelRegistryTagsKey(name string) string {
 
 func (r *RedisStore) makeModelRegistryTagKey(name, tag string) string {
 	return fmt.Sprintf(ModelRegistryTagKeyPattern, name, tag)
+}
+
+func (r *RedisStore) makeBenchmarkKey(name string) string {
+	return fmt.Sprintf(BenchmarkKeyPattern, name)
+}
+
+func (r *RedisStore) makeBenchmarkRunsKey(name string) string {
+	return fmt.Sprintf(BenchmarkRunsKeyPattern, name)
+}
+
+func (r *RedisStore) makeBenchmarkRunKey(benchName, registryName string, version int64) string {
+	return fmt.Sprintf(BenchmarkRunKeyPattern, benchName, registryName, version)
+}
+
+func (r *RedisStore) makeRegistryBenchmarksKey(registry string) string {
+	return fmt.Sprintf(ModelRegistryBenchmarksIndexPattern, registry)
+}
+
+func (r *RedisStore) makeBenchmarkMetricsKey(benchName string) string {
+	return fmt.Sprintf(BenchmarkMetricsKeyPattern, benchName)
+}
+
+func (r *RedisStore) makeBenchmarkRegistriesKey(benchName string) string {
+	return fmt.Sprintf(BenchmarkRegistriesKeyPattern, benchName)
 }
 
 // runTx runs a transaction function with an optimistic locks on the keys passed as argument.

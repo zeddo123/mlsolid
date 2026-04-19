@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// ModelEntry represents a model entry in a registry.
 type ModelEntry struct {
 	URL       string    `json:"url"`
 	Tags      []string  `json:"tags"`
@@ -13,15 +14,18 @@ type ModelEntry struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// ModelRegistry holds data related to a registry.
 type ModelRegistry struct {
-	Name      string
-	Models    []ModelEntry
-	Tags      map[string][]int
-	Timestamp time.Time
+	Name           string
+	Models         []ModelEntry
+	Tags           map[string][]int
+	Timestamp      time.Time
+	BenchmarkImage string
 }
 
+// NewModelRegistry creates a new registry.
 func NewModelRegistry(name string) *ModelRegistry {
-	return &ModelRegistry{
+	return &ModelRegistry{ //nolint: exhaustruct
 		Name:      name,
 		Models:    make([]ModelEntry, 0),
 		Tags:      make(map[string][]int),
@@ -29,6 +33,7 @@ func NewModelRegistry(name string) *ModelRegistry {
 	}
 }
 
+// NewModelRegistryWithTime creates a new registry with a specific Timestamp.
 func NewModelRegistryWithTime(name string, t time.Time) *ModelRegistry {
 	r := NewModelRegistry(name)
 	r.Timestamp = t
@@ -36,19 +41,23 @@ func NewModelRegistryWithTime(name string, t time.Time) *ModelRegistry {
 	return r
 }
 
-func (m ModelRegistry) VersionTag(version int) string {
+// VersionTag builds the version tag of a model.
+func (m *ModelRegistry) VersionTag(version int) string {
 	return fmt.Sprintf("v%d", version)
 }
 
-func (m ModelRegistry) LatestVersion() int {
+// LatestVersion returns the latest version number in the registry.
+func (m *ModelRegistry) LatestVersion() int {
 	return len(m.Models)
 }
 
-func (m ModelRegistry) LastModel() ModelEntry {
+// LastModel returns the last model push to the registry.
+func (m *ModelRegistry) LastModel() ModelEntry {
 	return m.Models[len(m.Models)-1]
 }
 
-func (m ModelRegistry) ModelByTag(tag string) (ModelEntry, error) {
+// ModelByTag returns the last model entry tagged with tag.
+func (m *ModelRegistry) ModelByTag(tag string) (ModelEntry, error) {
 	versions, ok := m.Tags[tag]
 	if !ok {
 		return ModelEntry{}, NewNotFoundErr("unknown tag")
@@ -57,7 +66,8 @@ func (m ModelRegistry) ModelByTag(tag string) (ModelEntry, error) {
 	return m.Models[versions[len(versions)-1]-1], nil
 }
 
-func (m ModelRegistry) ModelsByTag(tag string) ([]ModelEntry, error) {
+// ModelsByTag returns the models tagged with tag.
+func (m *ModelRegistry) ModelsByTag(tag string) ([]ModelEntry, error) {
 	versions, ok := m.Tags[tag]
 	if !ok {
 		return nil, NewNotFoundErr("unknown tag")
@@ -71,7 +81,8 @@ func (m ModelRegistry) ModelsByTag(tag string) ([]ModelEntry, error) {
 	return models, nil
 }
 
-func (m ModelRegistry) ModelByVersion(version int) (ModelEntry, error) {
+// ModelByVersion returns a model entry by its version.
+func (m *ModelRegistry) ModelByVersion(version int) (ModelEntry, error) {
 	if version < 1 || version > len(m.Models) {
 		return ModelEntry{}, NewNotFoundErr("unknown version number")
 	}
@@ -89,14 +100,16 @@ func (m *ModelRegistry) Add(url string, tags ...string) {
 	}
 
 	e := ModelEntry{
-		URL:  url,
-		Tags: append(tags, m.VersionTag(version)),
+		URL:       url,
+		Tags:      append(tags, m.VersionTag(version)),
+		Timestamp: time.Now(),
 	}
 
 	m.pushEntry(e)
 }
 
-func (m ModelRegistry) MarshalEntries() ([][]byte, error) {
+// MarshalEntries marshals all model entries to json.
+func (m *ModelRegistry) MarshalEntries() ([][]byte, error) {
 	res := make([][]byte, len(m.Models))
 
 	for i, e := range m.Models {
@@ -111,6 +124,24 @@ func (m ModelRegistry) MarshalEntries() ([][]byte, error) {
 	return res, nil
 }
 
+// AddTag adds a tag to model entry by its version number.
+func (m *ModelRegistry) AddTag(tag string, version int) error {
+	if version < 1 || version > len(m.Models) {
+		return NewNotFoundErr("unknown version number")
+	}
+
+	m.addTag(tag, version)
+
+	return nil
+}
+
+// SetBenchmarkImage sets the benchmark image of Model registry.
+func (m *ModelRegistry) SetBenchmarkImage(image string) error {
+	m.BenchmarkImage = image
+
+	return nil
+}
+
 func (m *ModelRegistry) pushEntry(e ModelEntry) {
 	m.Models = append(m.Models, e)
 }
@@ -123,14 +154,4 @@ func (m *ModelRegistry) addTag(tag string, version int) {
 	}
 
 	m.Tags[tag] = append(versions, version)
-}
-
-func (m *ModelRegistry) AddTag(tag string, version int) error {
-	if version < 1 || version > len(m.Models) {
-		return NewNotFoundErr("unknown version number")
-	}
-
-	m.addTag(tag, version)
-
-	return nil
 }

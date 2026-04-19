@@ -2,10 +2,12 @@ package solid
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/viper"
 )
 
+// Config configuration struct.
 type Config struct {
 	Prod bool `mapstructure:"prod"`
 
@@ -22,8 +24,13 @@ type Config struct {
 	S3Bucket   string `mapstructure:"s3_bucket"`
 	S3Region   string `mapstructure:"s3_region"`
 	S3Prefix   string `mapstructure:"s3_prefix"`
+
+	DockerRegistryUsername string `mapstructure:"docker_registry_username"`
+	DockerRegistryPassword string `mapstructure:"docker_registry_password"`
 }
 
+// LoadConfig loads mlsolid's configuration file from the path specified.
+// It also checks for any configuration file under /etc/mlsolid.
 func LoadConfig(path string) (Config, error) {
 	viper.SetConfigName("mlsolid")
 	viper.SetConfigType("yaml")
@@ -46,21 +53,24 @@ func LoadConfig(path string) (Config, error) {
 	viper.SetDefault("s3_region", "")
 	viper.SetDefault("s3_prefix", "artifacts")
 
+	viper.SetDefault("docker_registry_username", "")
+	viper.SetDefault("docker_registry_password", "")
+
 	viper.AutomaticEnv()
 
-	config := Config{}
+	config := Config{} //nolint: exhaustruct
 
 	err := viper.ReadInConfig()
 	if err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if errors.As(err, &configFileNotFoundError) {
-			return config, err
+			return config, fmt.Errorf("configuration file not found: %w", err)
 		}
 	}
 
 	err = viper.Unmarshal(&config)
 	if err != nil {
-		return config, err
+		return config, fmt.Errorf("could not parse config: %w", err)
 	}
 
 	return config, nil
