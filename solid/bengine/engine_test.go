@@ -1,10 +1,10 @@
 package bengine_test
 
 import (
-	"context"
+	"sync"
 	"testing"
-	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zeddo123/mlsolid/solid/bengine"
@@ -17,13 +17,23 @@ const DatasetURL = "https://www.kaggle.com/api/v1/datasets/download/gpreda/chine
 func TestEngineRun(t *testing.T) {
 	t.Parallel()
 
+	var wg sync.WaitGroup
+
 	topic := "bench"
 	bus := pubgo.NewBusWithContext(t.Context(), pubgo.DefaultOps())
 
 	sub := bus.Subscribe(topic)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	e := bengine.New(ctx, nil, sub, "", "")
+	e := bengine.New(sub,
+		bengine.WithDatasetsDest("./.mlsolid/datasets/"),
+		bengine.WithCheckpointsDest("./.mlsolid/checkpoints/"),
+		bengine.WithHumanReadableLogs(),
+		bengine.WithLoggingLevel(zerolog.DebugLevel))
+
+	wg.Go(func() {
+		e.Start(t.Context())
+	})
+
 	require.NotNil(t, e)
 
 	err := bus.Publish(topic, &types.BenchEvent{ //nolint: exhaustruct
@@ -33,10 +43,8 @@ func TestEngineRun(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	time.Sleep(70 * time.Second)
 	sub.Done()
-
-	cancel()
+	wg.Wait()
 }
 
 func TestPullDataset(t *testing.T) {
@@ -46,7 +54,9 @@ func TestPullDataset(t *testing.T) {
 
 	t.Log(path)
 
-	err := bengine.PullDataset(t.Context(), DatasetURL, path)
+	engine := bengine.New(nil)
+
+	err := engine.PullDataset(t.Context(), DatasetURL, path)
 	require.NoError(t, err)
 
 	assert.DirExists(t, path)
