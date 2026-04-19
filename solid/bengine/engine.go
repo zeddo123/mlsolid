@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
 
 	"github.com/docker/cli/opts"
 	ctr "github.com/docker/go-sdk/container"
@@ -17,11 +18,15 @@ import (
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/registry"
 	"github.com/moby/moby/client"
+	"github.com/rs/zerolog"
 	"github.com/zeddo123/mlsolid/solid/s3"
 	"github.com/zeddo123/mlsolid/solid/store"
 	"github.com/zeddo123/mlsolid/solid/types"
 	"github.com/zeddo123/pubgo"
 )
+
+// Opts handler function for setting engine configuration.
+type Opts func(cfg *Config)
 
 // Engine is a benchmark runner with docker containers.
 type Engine struct {
@@ -30,90 +35,194 @@ type Engine struct {
 	s3               s3.ObjectStore
 	registryUsername string
 	registryPassword string
+	datasetsDest     string
+	checkpointsDest  string
+	l                zerolog.Logger
+}
+
+// Config struct for a bengine instance.
+type Config struct {
+	Store            *store.RedisStore
+	Sub              *pubgo.Subscription
+	S3               s3.ObjectStore
+	RegistryUsername string
+	RegistryPassword string
+	DatasetsDest     string
+	CheckpointsDest  string
+	LoggingLevel     zerolog.Level
+	HumanReadable    bool
+}
+
+func defaultOpts() Config {
+	return Config{ //nolint: exhaustruct
+		DatasetsDest:    "/mlsolid/datasets/",
+		CheckpointsDest: "/mlsolid/checkpoints/",
+		LoggingLevel:    zerolog.InfoLevel,
+	}
+}
+
+// WithHumanReadableLogs disables structured logging.
+func WithHumanReadableLogs() Opts {
+	return func(cfg *Config) {
+		cfg.HumanReadable = true
+	}
+}
+
+// WithLoggingLevel sets logging level.
+func WithLoggingLevel(lvl zerolog.Level) Opts {
+	return func(cfg *Config) {
+		cfg.LoggingLevel = lvl
+	}
+}
+
+// WithDatasetsDest sets datasets path.
+func WithDatasetsDest(dest string) Opts {
+	return func(cfg *Config) {
+		cfg.DatasetsDest = dest
+	}
+}
+
+// WithCheckpointsDest sets checkpoints path.
+func WithCheckpointsDest(dest string) Opts {
+	return func(cfg *Config) {
+		cfg.CheckpointsDest = dest
+	}
+}
+
+// WithRegistryCreds sets the credentials of the docker registry to pull images from.
+func WithRegistryCreds(username, password string) Opts {
+	return func(cfg *Config) {
+		cfg.RegistryUsername = username
+		cfg.RegistryPassword = password
+	}
+}
+
+// WithS3 enables pulling datasets from an S3 bucket.
+func WithS3(store s3.ObjectStore) Opts {
+	return func(cfg *Config) {
+		cfg.S3 = store
+	}
+}
+
+// WithRedisStore sets the redis store used to record benchmarking runs.
+// If no redis store is provided, saving is skipped.
+func WithRedisStore(store *store.RedisStore) Opts {
+	return func(cfg *Config) {
+		cfg.Store = store
+	}
 }
 
 // New creates a new benchmark engine.
-func New(ctx context.Context, store *store.RedisStore,
-	sub *pubgo.Subscription, registryUsername, registryPassword string,
-) *Engine {
-	e := &Engine{
-		store:            store,
-		sub:              sub,
-		registryUsername: registryUsername,
-		registryPassword: registryPassword,
+func New(sub *pubgo.Subscription, opts ...Opts) *Engine {
+	cfg := defaultOpts()
+	for _, fn := range opts {
+		fn(&cfg)
 	}
 
-	go e.start(ctx)
+	var output io.Writer
 
-	return e
+	output = os.Stderr
+	if cfg.HumanReadable {
+		output = zerolog.ConsoleWriter{Out: os.Stderr} //nolint: exhaustruct
+	}
+
+	logger := zerolog.New(output).
+		Level(cfg.LoggingLevel).With().
+		Str("Layer", "bENGINE").
+		Timestamp().Logger()
+
+	return &Engine{
+		store:            cfg.Store,
+		sub:              sub,
+		s3:               cfg.S3,
+		registryUsername: cfg.RegistryUsername,
+		registryPassword: cfg.RegistryPassword,
+		checkpointsDest:  cfg.CheckpointsDest,
+		datasetsDest:     cfg.DatasetsDest,
+		l:                logger,
+	}
 }
 
-func (e *Engine) start(ctx context.Context) {
+// Start starts the engine instance.
+func (e *Engine) Start(ctx context.Context) {
 	cli, err := client.New(client.FromEnv)
 	if err != nil {
-		log.Println("[BENGINE] Could not setup docker client")
+		e.l.Error().Err(err).Msg("could not setup docker client")
 
 		return
 	}
 
-	log.Println("[BENGINE] Listening to benchmark events...")
+	e.l.Info().Msg("listening to benchmarking events...")
 
 	for {
 		select {
-		case msg := <-e.sub.Msgs:
+		case msg, ok := <-e.sub.Msgs:
+			if !ok {
+				return
+			}
+
 			event, ok := msg.(*types.BenchEvent)
 			if !ok {
 				break
 			}
 
-			log.Printf("[BENGINE] received event=%v+\n", event)
+			e.l.Info().
+				Str("benchmark", event.BenchName).
+				Str("registry", event.Registry).
+				Str("version", event.Version).
+				Str("image", event.DockerImage).
+				Str("model", event.ModelURL).
+				Str("dataset", event.DatasetName).
+				Str("datasetURL", event.DatasetURL).
+				Str("fromS3", strconv.FormatBool(event.FromS3)).
+				Str("autoTag", strconv.FormatBool(event.AutoTag)).
+				Str("tag", event.Tag).
+				Msg("received benchmark event")
 
-			err := e.consumeEvent(ctx, cli, event)
+			err := e.ConsumeEvent(ctx, cli, event)
 			if err != nil {
-				log.Println("[BENGINE] could not run benchmark", err)
+				e.l.Error().Err(err).Msg("could not run benchmark")
 			}
 
 		case <-ctx.Done():
-			log.Println("shutting down engine")
+			e.l.Info().Msg("shutting down bEngine")
 		}
 	}
 }
 
-func (e *Engine) consumeEvent(ctx context.Context, cli *client.Client, event *types.BenchEvent) error {
+// ConsumeEvent handles a benchmarking event.
+func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *types.BenchEvent) error {
 	err := e.pullImage(ctx, cli, event.DockerImage)
 	if err != nil {
-		log.Println("[BENGINE] could not pull docker image", err)
+		e.l.Error().Err(err).Msg("could not pull docker image")
 
 		return err
 	}
 
+	datasetPath := filepath.Join(e.datasetsDest, event.DatasetName)
+
+	e.l.Info().Str("datasetPath", datasetPath).
+		Msg("checking if dataset is already present")
+
 	// Load dataset if not present
-	datasetPath := fmt.Sprintf("/mlsolid/datasets/%s", event.DatasetName)
 	if _, err := os.Stat(datasetPath); errors.Is(err, os.ErrNotExist) {
 		// Downloading dataset
-		if event.FromS3 {
-			err := PullDatasetFromS3(event.DatasetURL, datasetPath)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := PullDataset(ctx, event.DatasetURL, datasetPath)
-			if err != nil {
-				return err
-			}
+		err := e.PullDataset(ctx, event.DatasetURL, datasetPath, event.FromS3)
+		if err != nil {
+			return err
 		}
 	}
 
 	// Load model if not present
-	checkpointPath := "/mlsolid/checkpoints/model.pt"
+	checkpointPath := filepath.Join(e.checkpointsDest, "model.pth")
 
-	result, err := RunContainer(ctx, event.DockerImage,
+	result, err := e.RunContainer(ctx, event.DockerImage,
 		event.DatasetName, datasetPath, checkpointPath)
 	if err != nil {
 		return err
 	}
 
-	log.Println("[BENGINE] Container finished running", result)
+	e.l.Info().Str("result", result).Msg("container exited successfully")
 
 	return nil
 }
@@ -127,25 +236,34 @@ func (e *Engine) pullImage(ctx context.Context, cli *client.Client, image string
 			Password: e.registryPassword,
 		})
 		if err != nil {
-			log.Println("could not encode docker registry creds", err)
+			e.l.Error().Err(err).Msg("could not encode docker registry creds")
 		} else {
 			opts.RegistryAuth = authStr
 		}
 	}
 
 	_, err := cli.ImagePull(ctx, image, opts)
+	if err != nil {
+		return fmt.Errorf("could not pull image: %w", err)
+	}
 
-	return err //nolint: wrapcheck
+	return nil
 }
 
 // PullDatasetFromS3 pulls a dataset from a S3 object.
-func PullDatasetFromS3(url string, outputPath string) error {
+func (e *Engine) PullDatasetFromS3(url string, outputPath string) error {
 	return nil
 }
 
 // PullDataset pulls a dataset from a public source with http.
-func PullDataset(ctx context.Context, url string, outputPath string) error {
+func (e *Engine) PullDataset(ctx context.Context, url string, outputPath string, fromS3 bool) error {
+	if fromS3 {
+		return e.PullDatasetFromS3(url, outputPath)
+	}
+
 	fileName := path.Base(url)
+
+	e.l.Info().Str("url", url).Msg("Downloading dataset")
 
 	resp, err := http.Get(url) //nolint: gosec, noctx
 	if err != nil {
@@ -153,6 +271,8 @@ func PullDataset(ctx context.Context, url string, outputPath string) error {
 	}
 
 	defer resp.Body.Close() //nolint: errcheck
+
+	e.l.Debug().Str("filename", fileName).Msg("creating temp file for dataset")
 
 	fs, err := os.CreateTemp(os.TempDir(), "*."+fileName)
 	if err != nil {
@@ -163,6 +283,8 @@ func PullDataset(ctx context.Context, url string, outputPath string) error {
 
 	tmpPath := fs.Name()
 
+	e.l.Debug().Str("tmpPath", tmpPath).Msg("Saving dataset to temp file")
+
 	_, err = io.Copy(fs, resp.Body)
 	if err != nil {
 		return fmt.Errorf("could not write content to tmp file %s: %w", tmpPath, err)
@@ -170,10 +292,14 @@ func PullDataset(ctx context.Context, url string, outputPath string) error {
 
 	defer os.Remove(tmpPath) //nolint: errcheck
 
+	e.l.Debug().Msg("seeking to start of file descriptor")
+
 	_, err = fs.Seek(0, io.SeekStart)
 	if err != nil {
 		return fmt.Errorf("could not rewind to start of tmpFile: %w", err)
 	}
+
+	e.l.Info().Str("outputPath", outputPath).Msg("extracting archive")
 
 	err = ExtractArchiveFromReader(ctx, outputPath, fileName, fs)
 	if err != nil {
@@ -184,7 +310,7 @@ func PullDataset(ctx context.Context, url string, outputPath string) error {
 }
 
 // RunContainer runs a benchmark on a container with a specified image, dataset, and checkpoint.
-func RunContainer(ctx context.Context, image, datasetName, datasetPath, checkpointPath string,
+func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPath, checkpointPath string,
 ) (string, error) {
 	outputPath := "/run/output.json"
 
@@ -195,7 +321,11 @@ func RunContainer(ctx context.Context, image, datasetName, datasetPath, checkpoi
 		return "", errors.New("could not set GpuOpts")
 	}
 
-	log.Printf("[BENGINE] Starting container image=%q dataset=%q checkpoint=%q\n", image, datasetName, checkpointPath)
+	e.l.Info().
+		Str("image", image).
+		Str("dataset", datasetPath).
+		Str("checkpoint", checkpointPath).
+		Msg("starting container")
 
 	c, err := ctr.Run(
 		ctx,
@@ -216,6 +346,10 @@ func RunContainer(ctx context.Context, image, datasetName, datasetPath, checkpoi
 		return "", fmt.Errorf("could not exec container %q: %w", image, err)
 	}
 
+	e.l.Debug().
+		Str("container", c.ShortID()).
+		Msg("waiting for container to exit")
+
 	wait := c.Client().ContainerWait(ctx, c.ID(), client.ContainerWaitOptions{}) //nolint: exhaustruct
 	select {
 	case err := <-wait.Error:
@@ -225,7 +359,9 @@ func RunContainer(ctx context.Context, image, datasetName, datasetPath, checkpoi
 	case <-wait.Result:
 	}
 
-	log.Println("[BENGINE] Copying benchmark results from container", c.ShortID())
+	e.l.Debug().
+		Str("container", c.ShortID()).
+		Msg("copying benchmark results from container")
 
 	reader, err := c.CopyFromContainer(ctx, outputPath)
 	if err != nil {
@@ -239,11 +375,16 @@ func RunContainer(ctx context.Context, image, datasetName, datasetPath, checkpoi
 		return "", fmt.Errorf("could not read output file content: %w", err)
 	}
 
-	log.Println("[BENGINE] Removing container...", c.ShortID())
+	e.l.Debug().
+		Str("container", c.ShortID()).
+		Msg("removing container from docker")
 
 	err = c.Terminate(ctx)
 	if err != nil {
-		log.Printf("[BENGINE] could not terminate container %q: %v\n", c.ShortID(), err)
+		e.l.Error().
+			Err(err).
+			Str("container", c.ShortID()).
+			Msg("could not terminate container")
 	}
 
 	return string(results), nil
