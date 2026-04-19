@@ -11,11 +11,13 @@ import (
 	"github.com/mholt/archives"
 )
 
+// ExtractArchiveFromReader extracts any type of archive (compressed/uncompressend)
+// using magic number to the specified destination.
 func ExtractArchiveFromReader(ctx context.Context, dest string, fileName string, r io.Reader) error {
 	// Detect archive filetype
 	format, reader, err := archives.Identify(ctx, fileName, r)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not identify file: %w", err)
 	}
 
 	ex, ok := format.(archives.Extractor)
@@ -28,12 +30,15 @@ func ExtractArchiveFromReader(ctx context.Context, dest string, fileName string,
 		return fmt.Errorf("could not pull absolute path from dest %q: %w", dest, err)
 	}
 
-	err = os.MkdirAll(destAbs, 0o755)
+	mod := 0o755
+	permission := os.FileMode(mod)
+
+	err = os.MkdirAll(destAbs, permission)
 	if err != nil {
 		return fmt.Errorf("could not create directory of archive: %w", err)
 	}
 
-	err = ex.Extract(ctx, reader, func(ctx context.Context, info archives.FileInfo) error {
+	err = ex.Extract(ctx, reader, func(_ context.Context, info archives.FileInfo) error {
 		if info.NameInArchive == "" || info.NameInArchive == "." {
 			return nil
 		}
@@ -57,11 +62,11 @@ func ExtractArchiveFromReader(ctx context.Context, dest string, fileName string,
 		}
 
 		if ifo.IsDir() {
-			return os.MkdirAll(abs, 0o755)
+			return os.MkdirAll(abs, permission)
 		}
 
 		// Ensure parent dir exists
-		if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(abs), permission); err != nil {
 			return fmt.Errorf("parent directory of `%s` is not present: %w", info.NameInArchive, err)
 		}
 
@@ -71,15 +76,15 @@ func ExtractArchiveFromReader(ctx context.Context, dest string, fileName string,
 			return fmt.Errorf("open file %s failed: %w", info.NameInArchive, err)
 		}
 
-		defer rc.Close()
+		defer rc.Close() //nolint: errcheck
 
 		// Opening destination file
-		out, err := os.OpenFile(abs, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, ifo.Mode().Perm())
+		out, err := os.OpenFile(abs, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, ifo.Mode().Perm()) //nolint: gosec
 		if err != nil {
 			return fmt.Errorf("could not open destination file `%q`: %w", abs, err)
 		}
 
-		defer out.Close()
+		defer out.Close() //nolint: errcheck
 
 		if _, err := io.Copy(out, rc); err != nil {
 			return fmt.Errorf("could not write file on %q: %w", abs, err)
@@ -88,5 +93,5 @@ func ExtractArchiveFromReader(ctx context.Context, dest string, fileName string,
 		return nil
 	})
 
-	return err
+	return err //nolint: wrapcheck
 }
