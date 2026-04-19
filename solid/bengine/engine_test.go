@@ -1,3 +1,5 @@
+//go:build integrationtests
+
 package bengine_test
 
 import (
@@ -56,7 +58,7 @@ func TestPullDataset(t *testing.T) {
 
 	engine := bengine.New(nil)
 
-	err := engine.PullDataset(t.Context(), DatasetURL, path)
+	err := engine.PullDataset(t.Context(), DatasetURL, path, false)
 	require.NoError(t, err)
 
 	assert.DirExists(t, path)
