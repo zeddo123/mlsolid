@@ -1,20 +1,26 @@
 package types
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/go-playground/validator/v10"
+)
 
 // Bench represents a benchmark.
 type Bench struct {
-	Name        string
+	Name        string `validate:"required"`
 	Paused      bool
 	EagerStart  bool
 	AutoTag     bool
-	Tag         string
-	Registries  []string
-	Metrics     []string
-	DatasetName string
-	DatasetURL  string
+	Tag         string   `validate:"required"`
+	Registries  []string `validate:"required"`
+	Metrics     []string `validate:"required"`
+	DatasetName string   `validate:"required"`
+	DatasetURL  string   `validate:"required,url"`
 	FromS3      bool
-	Timestamp   time.Time
+	Timestamp   time.Time `validate:"required"`
 }
 
 // BenchRun represents a benchmark run on a registry and version.
@@ -39,6 +45,26 @@ type BenchEvent struct {
 	Tag         string
 }
 
+// Validate validates Bench fields.
+func (b *Bench) Validate() error {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	err := validate.Struct(b)
+	if err != nil {
+		return fmt.Errorf("bench validation error: %w", err)
+	}
+
+	return nil
+}
+
 // Sanatize validates and cleans benchmark fields.
 func (b *Bench) Sanatize() {
+	b.Name = SanatizeName(b.Name)
+	b.DatasetName = strings.TrimSpace(b.DatasetName)
+}
+
+// SanatizeName sanatizes a name by removing any whitespace
+// and converting the string to lower case.
+func SanatizeName(name string) string {
+	return strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(name)), "-"))
 }

@@ -313,6 +313,18 @@ func (r *RedisStore) RegistryBenchmarks(ctx context.Context, registry string) ([
 	return benchs, nil
 }
 
+// BenchmarkExists checks if a benchmark with BenchName exists.
+func (r *RedisStore) BenchmarkExists(ctx context.Context, benchName string) (bool, error) {
+	key := r.makeBenchmarkKey(benchName)
+
+	c, err := r.Client.Exists(ctx, key).Result()
+	if err != nil {
+		return false, fmt.Errorf("could not check store: %w", err)
+	}
+
+	return c == 1, nil
+}
+
 func parseBenchRun(m map[string]string) (*types.BenchRun, error) {
 	reg := m["Registry"]
 
