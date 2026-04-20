@@ -22,3 +22,7 @@ func (m MockObjectStore) DownloadFile(_ context.Context, _ string) (io.ReadClose
 func (m MockObjectStore) UploadArtifacts(_ context.Context, _ []types.Artifact) ([]types.SavedArtifact, error) {
 	return []types.SavedArtifact{}, nil
 }
+
+func (m MockObjectStore) DownloadURL(_ context.Context, _ string) (io.ReadCloser, error) {
+	return nil, nil
+}
