@@ -1,5 +1,6 @@
 import time
 import argparse
+import os
 
 parser = argparse.ArgumentParser('entrypoint script')
 parser.add_argument('-o', '--output', type=str, default='output.json')
@@ -11,7 +12,13 @@ args = parser.parse_args()
 print(args)
 
 # simulate running a model benchmark
-time.sleep(60)
+time.sleep(20)
+
+print('Dataset path:', os.listdir(args.dataset_path))
+if os.path.exists(args.model_path):
+    print('Model path:', os.stat(args.model_path))
+else:
+    print('Model path: does not exist')
 
 with open(args.output, 'w') as fs:
     print(args.output)

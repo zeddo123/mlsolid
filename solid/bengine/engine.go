@@ -17,6 +17,7 @@ import (
 	ctr "github.com/docker/go-sdk/container"
 	"github.com/moby/moby/api/pkg/authconfig"
 	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
 	"github.com/moby/moby/api/types/registry"
 	"github.com/moby/moby/client"
 	"github.com/rs/zerolog"
@@ -36,8 +37,8 @@ type Engine struct {
 	s3               s3.ObjectStore
 	registryUsername string
 	registryPassword string
-	datasetsDest     string
-	checkpointsDest  string
+	rootDest         string
+	hostSourceVolume string
 	l                zerolog.Logger
 }
 
@@ -48,17 +49,16 @@ type Config struct {
 	S3               s3.ObjectStore
 	RegistryUsername string
 	RegistryPassword string
-	DatasetsDest     string
-	CheckpointsDest  string
+	RootDest         string
 	LoggingLevel     zerolog.Level
 	HumanReadable    bool
+	hostSourceVolume string
 }
 
 func defaultOpts() Config {
 	return Config{ //nolint: exhaustruct
-		DatasetsDest:    "/mlsolid/datasets/",
-		CheckpointsDest: "/mlsolid/checkpoints/",
-		LoggingLevel:    zerolog.InfoLevel,
+		RootDest:     "/mlsolid/",
+		LoggingLevel: zerolog.InfoLevel,
 	}
 }
 
@@ -76,17 +76,22 @@ func WithLoggingLevel(lvl zerolog.Level) Opts {
 	}
 }
 
-// WithDatasetsDest sets datasets path.
-func WithDatasetsDest(dest string) Opts {
+// WithRootDest sets root destination where datasets & checkpoints are saved.
+func WithRootDest(dest string) Opts {
 	return func(cfg *Config) {
-		cfg.DatasetsDest = dest
+		path, err := filepath.Abs(dest)
+		if err != nil {
+			panic(err)
+		}
+
+		cfg.RootDest = path
 	}
 }
 
-// WithCheckpointsDest sets checkpoints path.
-func WithCheckpointsDest(dest string) Opts {
+// WithHostSourceVolume sets host source volume if service is running inside a container.
+func WithHostSourceVolume(source string) Opts {
 	return func(cfg *Config) {
-		cfg.CheckpointsDest = dest
+		cfg.hostSourceVolume = source
 	}
 }
 
@@ -138,8 +143,8 @@ func New(sub *pubgo.Subscription, opts ...Opts) *Engine {
 		s3:               cfg.S3,
 		registryUsername: cfg.RegistryUsername,
 		registryPassword: cfg.RegistryPassword,
-		checkpointsDest:  cfg.CheckpointsDest,
-		datasetsDest:     cfg.DatasetsDest,
+		rootDest:         cfg.RootDest,
+		hostSourceVolume: cfg.hostSourceVolume,
 		l:                logger,
 	}
 }
@@ -200,7 +205,7 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 		return err
 	}
 
-	datasetPath := filepath.Join(e.datasetsDest, event.DatasetName)
+	datasetPath := filepath.Join(e.rootDest, "datasets", event.DatasetName)
 
 	e.l.Info().Str("datasetPath", datasetPath).
 		Msg("checking if dataset is already present")
@@ -215,7 +220,7 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 	}
 
 	// Load model if not present
-	checkpointPath := filepath.Join(e.checkpointsDest, "model.pth")
+	checkpointPath := filepath.Join(e.rootDest, "checkpoints", "model.pth")
 
 	result, err := e.RunContainer(ctx, event.DockerImage,
 		event.DatasetName, datasetPath, checkpointPath)
@@ -235,14 +240,32 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 }
 
 // PullDatasetFromS3 pulls a dataset from a S3 object.
-func (e *Engine) PullDatasetFromS3(url string, outputPath string) error {
+func (e *Engine) PullDatasetFromS3(ctx context.Context, url string, outputPath string) error {
+	if e.s3 == nil {
+		return fmt.Errorf("could not pull obj: s3 store not configured")
+	}
+
+	fileName := path.Base(url)
+
+	content, err := e.s3.DownloadURL(ctx, url)
+	if err != nil {
+		return fmt.Errorf("could not download obj: %w", err)
+	}
+
+	defer content.Close() //nolint: errcheck
+
+	err = e.extractArchive(ctx, fileName, content, outputPath)
+	if err != nil {
+		return fmt.Errorf("could not extract archive: %w", err)
+	}
+
 	return nil
 }
 
 // PullDataset pulls a dataset from a public source with http.
 func (e *Engine) PullDataset(ctx context.Context, url string, outputPath string, fromS3 bool) error {
 	if fromS3 {
-		return e.PullDatasetFromS3(url, outputPath)
+		return e.PullDatasetFromS3(ctx, url, outputPath)
 	}
 
 	fileName := path.Base(url)
@@ -256,6 +279,15 @@ func (e *Engine) PullDataset(ctx context.Context, url string, outputPath string,
 
 	defer resp.Body.Close() //nolint: errcheck
 
+	err = e.extractArchive(ctx, fileName, resp.Body, outputPath)
+	if err != nil {
+		return fmt.Errorf("could not extract archive: %w", err)
+	}
+
+	return nil
+}
+
+func (e *Engine) extractArchive(ctx context.Context, fileName string, content io.ReadCloser, outputPath string) error {
 	e.l.Debug().Str("filename", fileName).Msg("creating temp file for dataset")
 
 	fs, err := os.CreateTemp(os.TempDir(), "*."+fileName)
@@ -269,7 +301,7 @@ func (e *Engine) PullDataset(ctx context.Context, url string, outputPath string,
 
 	e.l.Debug().Str("tmpPath", tmpPath).Msg("Saving dataset to temp file")
 
-	_, err = io.Copy(fs, resp.Body)
+	_, err = io.Copy(fs, content)
 	if err != nil {
 		return fmt.Errorf("could not write content to tmp file %s: %w", tmpPath, err)
 	}
@@ -311,6 +343,13 @@ func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPa
 		Str("checkpoint", checkpointPath).
 		Msg("starting container")
 
+	source := e.rootDest
+	target := e.rootDest
+
+	if e.hostSourceVolume != "" {
+		source = e.hostSourceVolume
+	}
+
 	c, err := ctr.Run(
 		ctx,
 		ctr.WithImage(image),
@@ -321,6 +360,9 @@ func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPa
 			"-o", outputPath,
 		}...),
 		ctr.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+			hostConfig.Mounts = []mount.Mount{
+				{Type: mount.TypeBind, Source: source, Target: target, ReadOnly: true}, //nolint: exhaustruct
+			}
 			hostConfig.Resources = container.Resources{ //nolint: exhaustruct
 				DeviceRequests: gpuOpts.Value(),
 			}
@@ -342,6 +384,26 @@ func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPa
 		}
 	case <-wait.Result:
 	}
+
+	logs, err := c.Logs(ctx)
+	if err != nil {
+		e.l.Error().Err(err).
+			Str("container", c.ShortID()).
+			Msg("could not pull logs from container")
+	}
+	defer logs.Close() //nolint: errcheck
+
+	logsContent, err := io.ReadAll(logs)
+	if err != nil {
+		e.l.Error().Err(err).
+			Str("container", c.ShortID()).
+			Msg("could not read container logs")
+	}
+
+	e.l.Debug().
+		Str("container", c.ShortID()).
+		Str("logs", string(logsContent)).
+		Msg("docker container logs")
 
 	e.l.Debug().
 		Str("container", c.ShortID()).

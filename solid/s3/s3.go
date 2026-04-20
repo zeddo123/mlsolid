@@ -5,8 +5,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -20,6 +23,7 @@ const IDByteSize = 6
 type ObjectStore interface {
 	UploadFile(ctx context.Context, key string, body io.Reader) (string, error)
 	DownloadFile(ctx context.Context, key string) (io.ReadCloser, error)
+	DownloadURL(ctx context.Context, url string) (io.ReadCloser, error)
 	UploadArtifacts(ctx context.Context, artifacts []types.Artifact) ([]types.SavedArtifact, error)
 }
 
@@ -140,6 +144,21 @@ func (s *Store) GenerateKey(name string) string {
 	}
 
 	return fmt.Sprintf("%s/%s-%s", s.Prefix, r, name)
+}
+
+func (s Store) DownloadURL(ctx context.Context, s3URL string) (io.ReadCloser, error) {
+	u, err := url.Parse(s3URL)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Scheme != "s3" {
+		return nil, errors.New("invalid url scheme: expected s3")
+	}
+
+	key := strings.TrimPrefix(u.Path, "/")
+
+	return s.DownloadFile(ctx, key)
 }
 
 func generateID(b int) (string, error) {
