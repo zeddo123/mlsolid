@@ -25,6 +25,7 @@ type Config struct {
 	S3Region   string `mapstructure:"s3_region"`
 	S3Prefix   string `mapstructure:"s3_prefix"`
 
+	EnableBEngine          bool   `mapstructure:"enable_bengine"`
 	DockerRegistryUsername string `mapstructure:"docker_registry_username"`
 	DockerRegistryPassword string `mapstructure:"docker_registry_password"`
 	HostSourceVolume       string `mapstructure:"host_source_volume"`
@@ -54,6 +55,7 @@ func LoadConfig(path string) (Config, error) {
 	viper.SetDefault("s3_region", "")
 	viper.SetDefault("s3_prefix", "artifacts")
 
+	viper.SetDefault("enable_bengine", false)
 	viper.SetDefault("docker_registry_username", "")
 	viper.SetDefault("docker_registry_password", "")
 	viper.SetDefault("host_source_volume", "")
