@@ -27,8 +27,7 @@ func TestEngineRun(t *testing.T) {
 	sub := bus.Subscribe(topic)
 
 	e := bengine.New(sub,
-		bengine.WithDatasetsDest("./.mlsolid/datasets/"),
-		bengine.WithCheckpointsDest("./.mlsolid/checkpoints/"),
+		bengine.WithRootDest("./.mlsolid/"),
 		bengine.WithHumanReadableLogs(),
 		bengine.WithLoggingLevel(zerolog.DebugLevel))
 
@@ -39,7 +38,7 @@ func TestEngineRun(t *testing.T) {
 	require.NotNil(t, e)
 
 	err := bus.Publish(topic, &types.BenchEvent{ //nolint: exhaustruct
-		DockerImage: "ghcr.io/zeddo123/bench-dummy:0.0.2",
+		DockerImage: "ghcr.io/zeddo123/bench-dummy:0.0.4",
 		DatasetName: "chinese-mnist",
 		DatasetURL:  DatasetURL,
 	})

@@ -27,6 +27,7 @@ type Config struct {
 
 	DockerRegistryUsername string `mapstructure:"docker_registry_username"`
 	DockerRegistryPassword string `mapstructure:"docker_registry_password"`
+	HostSourceVolume       string `mapstructure:"host_source_volume"`
 }
 
 // LoadConfig loads mlsolid's configuration file from the path specified.
@@ -55,6 +56,7 @@ func LoadConfig(path string) (Config, error) {
 
 	viper.SetDefault("docker_registry_username", "")
 	viper.SetDefault("docker_registry_password", "")
+	viper.SetDefault("host_source_volume", "")
 
 	viper.AutomaticEnv()
 
