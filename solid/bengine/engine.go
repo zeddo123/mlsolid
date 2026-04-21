@@ -242,7 +242,7 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 // PullDatasetFromS3 pulls a dataset from a S3 object.
 func (e *Engine) PullDatasetFromS3(ctx context.Context, url string, outputPath string) error {
 	if e.s3 == nil {
-		return fmt.Errorf("could not pull obj: s3 store not configured")
+		return errors.New("could not pull obj: s3 store not configured")
 	}
 
 	fileName := path.Base(url)
@@ -280,44 +280,6 @@ func (e *Engine) PullDataset(ctx context.Context, url string, outputPath string,
 	defer resp.Body.Close() //nolint: errcheck
 
 	err = e.extractArchive(ctx, fileName, resp.Body, outputPath)
-	if err != nil {
-		return fmt.Errorf("could not extract archive: %w", err)
-	}
-
-	return nil
-}
-
-func (e *Engine) extractArchive(ctx context.Context, fileName string, content io.ReadCloser, outputPath string) error {
-	e.l.Debug().Str("filename", fileName).Msg("creating temp file for dataset")
-
-	fs, err := os.CreateTemp(os.TempDir(), "*."+fileName)
-	if err != nil {
-		return fmt.Errorf("could not create tmp file: %w", err)
-	}
-
-	defer fs.Close() //nolint: errcheck
-
-	tmpPath := fs.Name()
-
-	e.l.Debug().Str("tmpPath", tmpPath).Msg("Saving dataset to temp file")
-
-	_, err = io.Copy(fs, content)
-	if err != nil {
-		return fmt.Errorf("could not write content to tmp file %s: %w", tmpPath, err)
-	}
-
-	defer os.Remove(tmpPath) //nolint: errcheck
-
-	e.l.Debug().Msg("seeking to start of file descriptor")
-
-	_, err = fs.Seek(0, io.SeekStart)
-	if err != nil {
-		return fmt.Errorf("could not rewind to start of tmpFile: %w", err)
-	}
-
-	e.l.Info().Str("outputPath", outputPath).Msg("extracting archive")
-
-	err = ExtractArchiveFromReader(ctx, outputPath, fileName, fs)
 	if err != nil {
 		return fmt.Errorf("could not extract archive: %w", err)
 	}
@@ -449,12 +411,13 @@ func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, result 
 
 	e.l.Info().
 		Str("result", result).
+		Str("benchID", event.BenchID).
 		Str("benchName", event.BenchName).
 		Str("Registry", event.Registry).
 		Int("Version", int(event.Version)).
 		Msg("recording bench run into the store")
 
-	err = e.store.RecordRuns(ctx, event.BenchName, []types.BenchRun{{
+	err = e.store.RecordRuns(ctx, event.BenchID, []types.BenchRun{{
 		Registry:  event.Registry,
 		Version:   event.Version,
 		Metrics:   metrics,
@@ -485,6 +448,44 @@ func (e *Engine) pullImage(ctx context.Context, cli *client.Client, image string
 	_, err := cli.ImagePull(ctx, image, opts)
 	if err != nil {
 		return fmt.Errorf("could not pull image: %w", err)
+	}
+
+	return nil
+}
+
+func (e *Engine) extractArchive(ctx context.Context, fileName string, content io.ReadCloser, outputPath string) error {
+	e.l.Debug().Str("filename", fileName).Msg("creating temp file for dataset")
+
+	fs, err := os.CreateTemp(os.TempDir(), "*."+fileName)
+	if err != nil {
+		return fmt.Errorf("could not create tmp file: %w", err)
+	}
+
+	defer fs.Close() //nolint: errcheck
+
+	tmpPath := fs.Name()
+
+	e.l.Debug().Str("tmpPath", tmpPath).Msg("Saving dataset to temp file")
+
+	_, err = io.Copy(fs, content)
+	if err != nil {
+		return fmt.Errorf("could not write content to tmp file %s: %w", tmpPath, err)
+	}
+
+	defer os.Remove(tmpPath) //nolint: errcheck
+
+	e.l.Debug().Msg("seeking to start of file descriptor")
+
+	_, err = fs.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("could not rewind to start of tmpFile: %w", err)
+	}
+
+	e.l.Info().Str("outputPath", outputPath).Msg("extracting archive")
+
+	err = ExtractArchiveFromReader(ctx, outputPath, fileName, fs)
+	if err != nil {
+		return fmt.Errorf("could not extract archive: %w", err)
 	}
 
 	return nil
