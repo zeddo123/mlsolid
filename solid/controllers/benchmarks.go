@@ -9,9 +9,9 @@ import (
 )
 
 // CreateBenchmark creates a new benchmark.
-func (c *Controller) CreateBenchmark(ctx context.Context, b types.Bench) (bool, error) {
+func (c *Controller) CreateBenchmark(ctx context.Context, b types.Bench) (string, bool, error) {
 	if err := b.Validate(); err != nil {
-		return false, fmt.Errorf("could not create benchmark: %w", err)
+		return "", false, fmt.Errorf("could not create benchmark: %w", err)
 	}
 
 	b.GenerateID()
@@ -19,10 +19,10 @@ func (c *Controller) CreateBenchmark(ctx context.Context, b types.Bench) (bool, 
 
 	created, err := c.Redis.CreateBenchmark(ctx, b)
 	if err != nil {
-		return false, fmt.Errorf("saving benchmark failed: %w", err)
+		return "", false, fmt.Errorf("saving benchmark failed: %w", err)
 	}
 
-	return created, nil
+	return b.ID, created, nil
 }
 
 // Benchmark returns a benchmark with id `benchID` if present.
