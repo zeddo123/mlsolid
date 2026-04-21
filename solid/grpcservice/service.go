@@ -562,7 +562,20 @@ func (s *Service) BenchmarkRuns(ctx context.Context,
 		return nil, status.Error(codes.NotFound, "could not pull benchmark runs")
 	}
 
-	rs := make(map[string]*mlsolidv1.Metrics, len(runs))
+	rs := make([]*mlsolidv1.Metrics, len(runs))
+
+	for i, run := range runs {
+		if run == nil {
+			continue
+		}
+
+		rs[i] = &mlsolidv1.Metrics{
+			Registry:  run.Registry,
+			Version:   run.Version,
+			Timestamp: timestamppb.New(run.Timestamp),
+			Metrics:   run.Metrics,
+		}
+	}
 
 	return &mlsolidv1.BenchmarkRunsResponse{
 		Runs: rs,

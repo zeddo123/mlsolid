@@ -373,16 +373,16 @@ func parseBenchRun(m map[string]string) (*types.BenchRun, error) {
 	delete(m, "Version")
 	delete(m, "Timestamp")
 
-	metrics := make(map[string]float64, len(m))
+	metrics := make(map[string]float32, len(m))
 
 	for k, v := range m {
-		metric, err := strconv.ParseFloat(v, 64)
+		metric, err := strconv.ParseFloat(v, 32)
 		if err != nil {
 			// TODO: log error
 			continue
 		}
 
-		metrics[k] = metric
+		metrics[k] = float32(metric)
 	}
 
 	return &types.BenchRun{

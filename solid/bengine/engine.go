@@ -400,7 +400,7 @@ func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPa
 
 // RecordRun records a run into the store.
 func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, result string) error {
-	metrics := make(map[string]float64)
+	metrics := make(map[string]float32)
 
 	e.l.Debug().Str("result", result).Msg("unmarshalling result")
 

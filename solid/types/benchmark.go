@@ -38,7 +38,7 @@ type UpdateBench struct {
 type BenchRun struct {
 	Registry  string
 	Version   int64
-	Metrics   map[string]float64
+	Metrics   map[string]float32
 	Timestamp time.Time
 }
 
