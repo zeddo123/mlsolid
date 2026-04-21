@@ -14,6 +14,7 @@ func (c *Controller) CreateBenchmark(ctx context.Context, b types.Bench) (bool, 
 		return false, fmt.Errorf("could not create benchmark: %w", err)
 	}
 
+	b.GenerateID()
 	b.Sanatize()
 
 	created, err := c.Redis.CreateBenchmark(ctx, b)
@@ -24,9 +25,9 @@ func (c *Controller) CreateBenchmark(ctx context.Context, b types.Bench) (bool, 
 	return created, nil
 }
 
-// Benchmark returns a benchmark with id `benchName` if present.
-func (c *Controller) Benchmark(ctx context.Context, benchName string) (*types.Bench, error) {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+// Benchmark returns a benchmark with id `benchID` if present.
+func (c *Controller) Benchmark(ctx context.Context, benchID string) (*types.Bench, error) {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark: %w", err)
 	}
@@ -35,7 +36,7 @@ func (c *Controller) Benchmark(ctx context.Context, benchName string) (*types.Be
 		return nil, errors.New("could not pull benchmark: benchmark does not exist")
 	}
 
-	bench, err := c.Redis.Benchmark(ctx, benchName)
+	bench, err := c.Redis.Benchmark(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark: %w", err)
 	}
@@ -44,8 +45,8 @@ func (c *Controller) Benchmark(ctx context.Context, benchName string) (*types.Be
 }
 
 // BenchmarkMetrics pulls metrics tracked by a benchmark.
-func (c *Controller) BenchmarkMetrics(ctx context.Context, benchName string) ([]string, error) {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) BenchmarkMetrics(ctx context.Context, benchID string) ([]string, error) {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark metrics: %w", err)
 	}
@@ -54,7 +55,7 @@ func (c *Controller) BenchmarkMetrics(ctx context.Context, benchName string) ([]
 		return nil, errors.New("could not pull benchmark metrics: benchmark does not exist")
 	}
 
-	metrics, err := c.Redis.BenchmarkMetrics(ctx, benchName)
+	metrics, err := c.Redis.BenchmarkMetrics(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark metrics: %w", err)
 	}
@@ -63,8 +64,8 @@ func (c *Controller) BenchmarkMetrics(ctx context.Context, benchName string) ([]
 }
 
 // BenchmarkRegistries pulls registries linked the benchmark.
-func (c *Controller) BenchmarkRegistries(ctx context.Context, benchName string) ([]string, error) {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) BenchmarkRegistries(ctx context.Context, benchID string) ([]string, error) {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("checking if benchmark is present failed: %w", err)
 	}
@@ -73,7 +74,7 @@ func (c *Controller) BenchmarkRegistries(ctx context.Context, benchName string) 
 		return nil, errors.New("could not pull benchmark registries: benchmark does not exist")
 	}
 
-	metrics, err := c.Redis.BenchmarkRegistries(ctx, benchName)
+	metrics, err := c.Redis.BenchmarkRegistries(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark registries: %w", err)
 	}
@@ -82,8 +83,8 @@ func (c *Controller) BenchmarkRegistries(ctx context.Context, benchName string) 
 }
 
 // BenchmarkRuns pulls all recorded benchmark runs.
-func (c *Controller) BenchmarkRuns(ctx context.Context, benchName string) ([]*types.BenchRun, error) {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) BenchmarkRuns(ctx context.Context, benchID string) ([]*types.BenchRun, error) {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("checking if benchmark is present failed: %w", err)
 	}
@@ -92,7 +93,7 @@ func (c *Controller) BenchmarkRuns(ctx context.Context, benchName string) ([]*ty
 		return nil, errors.New("benchmark does not exist")
 	}
 
-	runs, err := c.Redis.BenchmarkRuns(ctx, benchName)
+	runs, err := c.Redis.BenchmarkRuns(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark runs: %w", err)
 	}
@@ -121,8 +122,8 @@ func (c *Controller) RegistryBenchmarks(ctx context.Context, registry string) ([
 }
 
 // ToggleBenchmark toggle a benchmark's paused state.
-func (c *Controller) ToggleBenchmark(ctx context.Context, benchName string, paused bool) error {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) ToggleBenchmark(ctx context.Context, benchID string, paused bool) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return fmt.Errorf("could not toggle benchmark: %w", err)
 	}
@@ -131,7 +132,7 @@ func (c *Controller) ToggleBenchmark(ctx context.Context, benchName string, paus
 		return errors.New("could not toggle benchmark: benchmark does not exist")
 	}
 
-	err = c.Redis.ToggleBenchmark(ctx, benchName, paused)
+	err = c.Redis.ToggleBenchmark(ctx, benchID, paused)
 	if err != nil {
 		return fmt.Errorf("could not toggle benchmark paused: %w", err)
 	}
@@ -139,9 +140,27 @@ func (c *Controller) ToggleBenchmark(ctx context.Context, benchName string, paus
 	return nil
 }
 
+func (c *Controller) UpdateBenchmark(ctx context.Context, benchID string, update types.UpdateBench) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
+	if err != nil {
+		return fmt.Errorf("checking if benchmark exists failed: %w", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("could not find benchmark %q: %w", benchID, types.ErrNotFound)
+	}
+
+	err = c.Redis.UpdateBenchmark(ctx, benchID, update)
+	if err != nil {
+		return fmt.Errorf("could not update benchmark: %w", err)
+	}
+
+	return nil
+}
+
 // AddBenchmarkRegistries adds new registries to a benchmark.
-func (c *Controller) AddBenchmarkRegistries(ctx context.Context, benchName string, registries []string) error {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) AddBenchmarkRegistries(ctx context.Context, benchID string, registries []string) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return fmt.Errorf("could not add registries: %w", err)
 	}
@@ -150,7 +169,7 @@ func (c *Controller) AddBenchmarkRegistries(ctx context.Context, benchName strin
 		return errors.New("could not add registries: benchmark does not exist")
 	}
 
-	err = c.Redis.AddBenchmarkRegistries(ctx, benchName, registries)
+	err = c.Redis.AddBenchmarkRegistries(ctx, benchID, registries)
 	if err != nil {
 		return fmt.Errorf("could not add registries: %w", err)
 	}
@@ -159,8 +178,8 @@ func (c *Controller) AddBenchmarkRegistries(ctx context.Context, benchName strin
 }
 
 // RemBenchmarkRegistries removes registries from a benchmark.
-func (c *Controller) RemBenchmarkRegistries(ctx context.Context, benchName string, registries []string) error {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) RemBenchmarkRegistries(ctx context.Context, benchID string, registries []string) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return fmt.Errorf("could not remove registries: %w", err)
 	}
@@ -169,7 +188,7 @@ func (c *Controller) RemBenchmarkRegistries(ctx context.Context, benchName strin
 		return errors.New("could not remove registries: benchmark does not exist")
 	}
 
-	err = c.Redis.RemBenchmarkRegistries(ctx, benchName, registries)
+	err = c.Redis.RemBenchmarkRegistries(ctx, benchID, registries)
 	if err != nil {
 		return fmt.Errorf("could not remove registries: %w", err)
 	}
@@ -178,8 +197,8 @@ func (c *Controller) RemBenchmarkRegistries(ctx context.Context, benchName strin
 }
 
 // AddBenchmarkMetrics adds metrics to a benchmark.
-func (c *Controller) AddBenchmarkMetrics(ctx context.Context, benchName string, metrics []string) error {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) AddBenchmarkMetrics(ctx context.Context, benchID string, metrics []string) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return fmt.Errorf("could not add metrics: %w", err)
 	}
@@ -188,7 +207,7 @@ func (c *Controller) AddBenchmarkMetrics(ctx context.Context, benchName string, 
 		return errors.New("could not add metrics: benchmark does not exist")
 	}
 
-	err = c.Redis.AddBenchmarkMetrics(ctx, benchName, metrics)
+	err = c.Redis.AddBenchmarkMetrics(ctx, benchID, metrics)
 	if err != nil {
 		return fmt.Errorf("could not add metrics: %w", err)
 	}
@@ -197,8 +216,8 @@ func (c *Controller) AddBenchmarkMetrics(ctx context.Context, benchName string, 
 }
 
 // RemBenchmarkMetrics removes metrics from a benchmark.
-func (c *Controller) RemBenchmarkMetrics(ctx context.Context, benchName string, metrics []string) error {
-	exists, err := c.Redis.BenchmarkExists(ctx, benchName)
+func (c *Controller) RemBenchmarkMetrics(ctx context.Context, benchID string, metrics []string) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return fmt.Errorf("could not remove metrics: %w", err)
 	}
@@ -207,7 +226,7 @@ func (c *Controller) RemBenchmarkMetrics(ctx context.Context, benchName string, 
 		return errors.New("could not remove metrics: benchmark does not exist")
 	}
 
-	err = c.Redis.RemBenchmarkMetrics(ctx, benchName, metrics)
+	err = c.Redis.RemBenchmarkMetrics(ctx, benchID, metrics)
 	if err != nil {
 		return fmt.Errorf("could not remove registries: %w", err)
 	}

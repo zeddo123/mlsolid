@@ -233,7 +233,7 @@ message SetBenchmarkContainerResponse {
 }
 
 message BenchmarkRequest {
-  string benchmark_name = 1;
+  string benchmark_id = 1;
 }
 message BenchmarkResponse {
   string name = 1;
@@ -246,6 +246,7 @@ message BenchmarkResponse {
   string dataset_name = 8;
   string dataset_url = 9;
   bool from_s3 = 10;
+  string benchmark_id = 11;
 }
 
 message CreateBenchmarkRequest {
@@ -263,10 +264,12 @@ message CreateBenchmarkRequest {
 
 message CreateBenchmarkResponse {
   bool created = 1;
+  string benchmark_id = 2;
 }
 
 message ToggleBenchmarkRequest {
   bool paused = 1;
+  string benchmark_id = 2;
 }
 message ToggleBenchmarkResponse {
   bool paused = 1;
@@ -280,7 +283,8 @@ message UpdateBenchmarkRequest {
   repeated string remove_registries = 5;
   repeated string add_metrics = 6;
   repeated string remove_metrics = 7;
-  repeated string decision_metric = 8;
+  optional string decision_metric = 8;
+  string benchmark_id = 9;
 }
 message UpdateBenchmarkResponse {
   string name = 1;
@@ -292,7 +296,7 @@ message UpdateBenchmarkResponse {
 }
 
 message DeleteBenchmarkRequest {
-  string name = 1;
+  string benchmark_id = 1;
 }
 
 message DeleteBenchmarkResponse {
@@ -300,7 +304,7 @@ message DeleteBenchmarkResponse {
 }
 
 message BenchmarkRunsRequest {
-  string benchmark_name = 1;
+  string benchmark_id = 1;
 }
 message BenchmarkRunsResponse {
   map<string, Metrics> runs = 1;
@@ -311,7 +315,7 @@ message Metrics {
 }
 
 message BestModelRequest {
-  string benchmark_name = 1;
+  string benchmark_id = 1;
   string metric = 2;
 }
 
