@@ -44,6 +44,7 @@ type BenchRun struct {
 
 // BenchEvent represents a benchmarking event.
 type BenchEvent struct {
+	BenchID     string
 	BenchName   string
 	Registry    string
 	Version     int64

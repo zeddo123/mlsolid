@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -46,7 +47,7 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 	// Setting model entries under key "registry:<name>"
 	entries, err := m.MarshalEntries()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not marshal model entries: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -124,7 +125,7 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 
 	err = registry.SetBenchmarkImage(info["BenchmarkImage"])
 	if err != nil {
-		// TODO: log error
+		log.Println("could not set registry benchmark image container", err)
 	}
 
 	for _, e := range entries {
@@ -318,6 +319,20 @@ func (r *RedisStore) updateModelRegistry(ctx context.Context, p redis.Pipeliner,
 		for _, entry := range entries {
 			p.LPush(ctx, tagKey, entry)
 		}
+	}
+
+	return nil
+}
+
+// UpdateRegistryDockerImage updates the benchmark image of a registry.
+func (r *RedisStore) UpdateRegistryDockerImage(ctx context.Context, registry, dockerImage string) error {
+	if err := r.ModelRegistryExists(ctx, registry); err != nil {
+		return err
+	}
+
+	_, err := r.Client.HSet(ctx, r.makeModelRegistryInfoKey(registry), "BenchmarkImage", dockerImage).Result()
+	if err != nil {
+		return fmt.Errorf("could not set BenchmarkImage: %w", err)
 	}
 
 	return nil

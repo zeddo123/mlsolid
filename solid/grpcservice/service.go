@@ -403,10 +403,6 @@ func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 }
 
 func (s *Service) TagModel(ctx context.Context, req *mlsolidv1.TagModelRequest) (*mlsolidv1.TagModelResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	err := s.Controller.TagModel(ctx, req.GetName(), int(req.GetVersion()), req.GetTags()...)
 	if err != nil {
 		return nil, ParseError(err)
@@ -415,6 +411,17 @@ func (s *Service) TagModel(ctx context.Context, req *mlsolidv1.TagModelRequest) 
 	return &mlsolidv1.TagModelResponse{Added: true}, nil
 }
 
+// SetBenchmarkContainer sets the benchmark container of a registry.
+func (s *Service) SetBenchmarkContainer(ctx context.Context, req *mlsolidv1.SetBenchmarkContainerRequest) (*mlsolidv1.SetBenchmarkContainerResponse, error) {
+	err := s.Controller.UpdateRegistryDockerImage(ctx, req.GetRegistryName(), req.GetContainerUrl())
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	return &mlsolidv1.SetBenchmarkContainerResponse{Set: true}, nil
+}
+
+// Benchmarks returns a list of benchmark ids.
 func (s *Service) Benchmarks(ctx context.Context, req *mlsolidv1.BenchmarksRequest) (*mlsolidv1.BenchmarksResponse, error) {
 	benchs, err := s.Controller.Benchmarks(ctx)
 	if err != nil {
@@ -426,7 +433,10 @@ func (s *Service) Benchmarks(ctx context.Context, req *mlsolidv1.BenchmarksReque
 	}, nil
 }
 
-func (s *Service) Benchmark(ctx context.Context, req *mlsolidv1.BenchmarkRequest) (*mlsolidv1.BenchmarkResponse, error) {
+// Benchmark pull a benchmark by its id.
+func (s *Service) Benchmark(ctx context.Context,
+	req *mlsolidv1.BenchmarkRequest,
+) (*mlsolidv1.BenchmarkResponse, error) {
 	bench, err := s.Controller.Benchmark(ctx, req.GetBenchmarkName())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -471,6 +481,7 @@ func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenc
 	}, nil
 }
 
+// ToggleBenchmark toogles a benchmark's pause state.
 func (s *Service) ToggleBenchmark(ctx context.Context, req *mlsolidv1.ToggleBenchmarkRequest) (*mlsolidv1.ToggleBenchmarkResponse, error) {
 	// TODO: update proto to add benchmark name to req.
 	err := s.Controller.ToggleBenchmark(ctx, "", req.GetPaused())
@@ -537,14 +548,17 @@ func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenc
 	}, nil
 }
 
+// DeleteBenchmark rpc method.
 func (s *Service) DeleteBenchmark(ctx context.Context, req *mlsolidv1.DeleteBenchmarkRequest) (*mlsolidv1.DeleteBenchmarkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "DeleteBenchmark is not implemented")
 }
 
+// BenchmarkRuns rpc method.
 func (s *Service) BenchmarkRuns(ctx context.Context, req *mlsolidv1.BenchmarkRunsRequest) (*mlsolidv1.BenchmarkRunsResponse, error) {
 	return nil, nil
 }
 
+// BestModel rpc method.
 func (s *Service) BestModel(ctx context.Context, req *mlsolidv1.BestModelRequest) (*mlsolidv1.BestModelResponse, error) {
-	return nil, nil
+	return nil, status.Error(codes.Unimplemented, "BestModel is not implemented yet")
 }
