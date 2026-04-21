@@ -6,21 +6,32 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 // Bench represents a benchmark.
 type Bench struct {
-	Name        string `validate:"required"`
-	Paused      bool
-	EagerStart  bool
-	AutoTag     bool
-	Tag         string   `validate:"required"`
-	Registries  []string `validate:"required"`
-	Metrics     []string `validate:"required"`
-	DatasetName string   `validate:"required"`
-	DatasetURL  string   `validate:"required,url"`
-	FromS3      bool
-	Timestamp   time.Time `validate:"required"`
+	ID             string `validate:"required"`
+	Name           string `validate:"required"`
+	Paused         bool
+	EagerStart     bool
+	AutoTag        bool
+	Tag            string `validate:"required"`
+	DecisionMetric string
+	Registries     []string `validate:"required"`
+	Metrics        []string `validate:"required"`
+	DatasetName    string   `validate:"required"`
+	DatasetURL     string   `validate:"required,url"`
+	FromS3         bool
+	Timestamp      time.Time `validate:"required"`
+}
+
+// UpdateBench struct used to update a benchmark.
+type UpdateBench struct {
+	Name           string
+	AutoTag        *bool
+	Tag            string
+	DecisionMetric string
 }
 
 // BenchRun represents a benchmark run on a registry and version.
@@ -43,6 +54,11 @@ type BenchEvent struct {
 	FromS3      bool
 	AutoTag     bool
 	Tag         string
+}
+
+// GenerateID generates a new ID.
+func (b *Bench) GenerateID() {
+	b.ID = uuid.NewString()
 }
 
 // Validate validates Bench fields.

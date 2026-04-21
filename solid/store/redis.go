@@ -71,11 +71,11 @@ const (
 	BenchmarkRegistriesKeyPattern = "bench:%s:registries"
 
 	// BenchmarkRunsKeyPattern index used to pull all benchmark runs
-	// It follows this form: index:bench:<bench-name>:runs.
+	// It follows this form: index:bench:<bench-id>:runs.
 	BenchmarkRunsKeyPattern = "index:bench:%s:runs"
 
 	// BenchmarkRunKeyPattern key pattern used to save a benchmark run
-	// It follows this order: bench:<bench-name>:run:<registry-name>:<version>.
+	// It follows this order: bench:<bench-id>:run:<registry-name>:<version>.
 	BenchmarkRunKeyPattern = "bench:%s:run:%s:%d"
 
 	transactionMaxTries = 10
@@ -121,28 +121,28 @@ func (r *RedisStore) makeModelRegistryTagKey(name, tag string) string {
 	return fmt.Sprintf(ModelRegistryTagKeyPattern, name, tag)
 }
 
-func (r *RedisStore) makeBenchmarkKey(name string) string {
-	return fmt.Sprintf(BenchmarkKeyPattern, name)
+func (r *RedisStore) makeBenchmarkKey(id string) string {
+	return fmt.Sprintf(BenchmarkKeyPattern, id)
 }
 
-func (r *RedisStore) makeBenchmarkRunsKey(name string) string {
-	return fmt.Sprintf(BenchmarkRunsKeyPattern, name)
+func (r *RedisStore) makeBenchmarkRunsKey(id string) string {
+	return fmt.Sprintf(BenchmarkRunsKeyPattern, id)
 }
 
-func (r *RedisStore) makeBenchmarkRunKey(benchName, registryName string, version int64) string {
-	return fmt.Sprintf(BenchmarkRunKeyPattern, benchName, registryName, version)
+func (r *RedisStore) makeBenchmarkRunKey(benchID, registryName string, version int64) string {
+	return fmt.Sprintf(BenchmarkRunKeyPattern, benchID, registryName, version)
 }
 
 func (r *RedisStore) makeRegistryBenchmarksKey(registry string) string {
 	return fmt.Sprintf(ModelRegistryBenchmarksIndexPattern, registry)
 }
 
-func (r *RedisStore) makeBenchmarkMetricsKey(benchName string) string {
-	return fmt.Sprintf(BenchmarkMetricsKeyPattern, benchName)
+func (r *RedisStore) makeBenchmarkMetricsKey(benchID string) string {
+	return fmt.Sprintf(BenchmarkMetricsKeyPattern, benchID)
 }
 
-func (r *RedisStore) makeBenchmarkRegistriesKey(benchName string) string {
-	return fmt.Sprintf(BenchmarkRegistriesKeyPattern, benchName)
+func (r *RedisStore) makeBenchmarkRegistriesKey(benchID string) string {
+	return fmt.Sprintf(BenchmarkRegistriesKeyPattern, benchID)
 }
 
 // runTx runs a transaction function with an optimistic locks on the keys passed as argument.
