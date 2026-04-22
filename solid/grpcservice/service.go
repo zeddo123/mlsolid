@@ -15,6 +15,7 @@ import (
 
 	mlsolidv1grpc "buf.build/gen/go/zeddo123/mlsolid/grpc/go/mlsolid/v1/mlsolidv1grpc"
 	mlsolidv1 "buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go/mlsolid/v1"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/rs/zerolog"
 	"github.com/zeddo123/mlsolid/solid/controllers"
@@ -25,6 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// Service implementation of mlsolid grpc server.
 type Service struct {
 	mlsolidv1grpc.UnimplementedMlsolidServiceServer
 
@@ -52,9 +54,11 @@ func StartServer(port string, ctrl *controllers.Controller) {
 	server := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			logging.UnaryServerInterceptor(interceptorLogger(logger), opts...),
+			auth.UnaryServerInterceptor(authInterceptor(ctrl)),
 		),
 		grpc.ChainStreamInterceptor(
 			logging.StreamServerInterceptor(interceptorLogger(logger), opts...),
+			auth.StreamServerInterceptor(authInterceptor(ctrl)),
 		),
 	)
 
