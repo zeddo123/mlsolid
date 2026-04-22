@@ -85,3 +85,29 @@ func (b *Bench) Sanatize() {
 func SanatizeName(name string) string {
 	return strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(name)), "-"))
 }
+
+// BestRuns returns the best performing bechmark run for each metric provided.
+func BestRuns(runs []*BenchRun, metrics ...string) map[string]*BenchRun {
+	out := make(map[string]*BenchRun, len(metrics))
+
+	for _, run := range runs {
+		for _, metric := range metrics {
+			if out[metric] == nil {
+				out[metric] = run
+
+				continue
+			}
+
+			val, ok := run.Metrics[metric]
+			if !ok {
+				continue
+			}
+
+			if out[metric].Metrics[metric] < val {
+				out[metric] = run
+			}
+		}
+	}
+
+	return out
+}

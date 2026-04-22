@@ -319,11 +319,11 @@ message Metrics {
 
 message BestModelRequest {
   string benchmark_id = 1;
-  string metric = 2;
+  repeated string metrics = 2;
 }
 
 message BestModelResponse {
-  map<string, int64> best_models = 1;
+  map<string, Metrics> best_models = 1;
 }
 
 message BenchmarksRequest {}

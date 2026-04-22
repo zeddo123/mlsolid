@@ -583,6 +583,15 @@ func (s *Service) BenchmarkRuns(ctx context.Context,
 }
 
 // BestModel rpc method.
-func (s *Service) BestModel(_ context.Context, _ *mlsolidv1.BestModelRequest) (*mlsolidv1.BestModelResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "BestModel is not implemented yet")
+func (s *Service) BestModel(ctx context.Context, req *mlsolidv1.BestModelRequest) (*mlsolidv1.BestModelResponse, error) {
+	runs, err := s.Controller.BenchmarkRuns(ctx, req.GetBenchmarkId())
+	if err != nil {
+		return nil, ParseError(err)
+	}
+
+	_ = types.BestRuns(runs, req.GetMetric())
+
+	resp := &mlsolidv1.BestModelResponse{}
+
+	return resp, status.Error(codes.Unimplemented, "BestModel is not implemented yet")
 }
