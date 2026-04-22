@@ -10,6 +10,9 @@ import (
 )
 
 const (
+	// APIKeyPattern pattern that represents a api key
+	APIKeyPattern = "api-key:%s"
+
 	// ExpInfoKeyPattern is a pattern to a key that holds
 	// information on experiments.
 	ExpInfoKeyPattern = "info:exp:%s"
@@ -83,6 +86,10 @@ const (
 
 type RedisStore struct {
 	Client redis.Client
+}
+
+func (r *RedisStore) makeAPIKey(key string) string {
+	return fmt.Sprintf(APIKeyPattern, key)
 }
 
 func (r *RedisStore) makeExpKey(id string) string {
