@@ -34,7 +34,7 @@ type Service struct {
 }
 
 // StartServer starts a grpc server instance.
-func StartServer(port string, ctrl *controllers.Controller) {
+func StartServer(port string, ctrl *controllers.Controller, authEnabled bool) {
 	l, err := net.Listen("tcp", ":"+port) //nolint: noctx
 	if err != nil {
 		log.Println("could not listen to port", port)
@@ -51,14 +51,28 @@ func StartServer(port string, ctrl *controllers.Controller) {
 		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
 	}
 
+	interceptLogger := interceptorLogger(logger)
+
+	unaryIterceptors := []grpc.UnaryServerInterceptor{
+		logging.UnaryServerInterceptor(interceptLogger, opts...),
+	}
+
+	streamIterceptors := []grpc.StreamServerInterceptor{
+		logging.StreamServerInterceptor(interceptLogger, opts...),
+	}
+
+	if authEnabled {
+		authIntercept := authInterceptor(ctrl)
+		unaryIterceptors = append(unaryIterceptors, auth.UnaryServerInterceptor(authIntercept))
+		streamIterceptors = append(streamIterceptors, auth.StreamServerInterceptor(authIntercept))
+	}
+
 	server := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			logging.UnaryServerInterceptor(interceptorLogger(logger), opts...),
-			auth.UnaryServerInterceptor(authInterceptor(ctrl)),
+			unaryIterceptors...,
 		),
 		grpc.ChainStreamInterceptor(
-			logging.StreamServerInterceptor(interceptorLogger(logger), opts...),
-			auth.StreamServerInterceptor(authInterceptor(ctrl)),
+			streamIterceptors...,
 		),
 	)
 

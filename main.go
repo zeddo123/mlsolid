@@ -77,7 +77,7 @@ func main() {
 		go engine.Start(context.Background())
 	}
 
-	go grpcservice.StartServer(config.GrpcPort, &controller)
+	go grpcservice.StartServer(config.GrpcPort, &controller, config.APIKeyAccess)
 	go api.StartServer(config.APIPort, &controller)
 
 	select {}
