@@ -45,7 +45,7 @@ func (c *Controller) Benchmark(ctx context.Context, benchID string) (*types.Benc
 }
 
 // BenchmarkMetrics pulls metrics tracked by a benchmark.
-func (c *Controller) BenchmarkMetrics(ctx context.Context, benchID string) ([]string, error) {
+func (c *Controller) BenchmarkMetrics(ctx context.Context, benchID string) ([]types.BenchMetric, error) {
 	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark metrics: %w", err)
@@ -197,7 +197,7 @@ func (c *Controller) RemBenchmarkRegistries(ctx context.Context, benchID string,
 }
 
 // AddBenchmarkMetrics adds metrics to a benchmark.
-func (c *Controller) AddBenchmarkMetrics(ctx context.Context, benchID string, metrics []string) error {
+func (c *Controller) AddBenchmarkMetrics(ctx context.Context, benchID string, metrics []types.BenchMetric) error {
 	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
 		return fmt.Errorf("could not add metrics: %w", err)

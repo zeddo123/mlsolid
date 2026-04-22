@@ -450,7 +450,7 @@ func (s *Service) Benchmark(ctx context.Context,
 		Tag:             bench.Tag,
 		DecisionMetric:  bench.DecisionMetric,
 		ModelRegistries: bench.Registries,
-		Metrics:         bench.Metrics,
+		Metrics:         bench.BenchMetrics(),
 		DatasetName:     bench.DatasetName,
 		DatasetUrl:      bench.DatasetURL,
 		FromS3:          bench.FromS3,
@@ -459,7 +459,13 @@ func (s *Service) Benchmark(ctx context.Context,
 
 // CreateBenchmark grpc method to create a new benchmark.
 func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenchmarkRequest) (*mlsolidv1.CreateBenchmarkResponse, error) {
-	id, created, err := s.Controller.CreateBenchmark(ctx, types.Bench{ //nolint: exhaustruct
+	metrics := make([]types.BenchMetric, len(req.GetMetrics()))
+
+	for i, m := range req.GetMetrics() {
+		metrics[i] = types.BenchMetric{Name: m}
+	}
+
+	id, created, err := s.Controller.CreateBenchmark(ctx, types.Bench{
 		Timestamp:      time.Now(),
 		Paused:         false,
 		Name:           req.GetName(),
@@ -468,7 +474,7 @@ func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenc
 		Tag:            req.GetTag(),
 		DecisionMetric: req.GetDecisionMetric(),
 		Registries:     req.GetModelRegistries(),
-		Metrics:        req.GetMetrics(),
+		Metrics:        metrics,
 		DatasetName:    req.GetDatasetName(),
 		DatasetURL:     req.GetDatasetUrl(),
 		FromS3:         req.GetFromS3(),
@@ -506,7 +512,13 @@ func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenc
 	}
 
 	if len(req.GetAddMetrics()) > 0 {
-		err := s.Controller.AddBenchmarkMetrics(ctx, req.GetBenchmarkId(), req.GetAddMetrics())
+		metrics := make([]types.BenchMetric, len(req.GetAddMetrics()))
+		for i, m := range req.GetAddMetrics() {
+			metrics[i] = types.BenchMetric{
+				Name: m,
+			}
+		}
+		err := s.Controller.AddBenchmarkMetrics(ctx, req.GetBenchmarkId(), metrics)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -543,7 +555,7 @@ func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenc
 		AutoTag:         benchmark.AutoTag,
 		Tag:             benchmark.Tag,
 		ModelRegistries: benchmark.Registries,
-		Metrics:         benchmark.Metrics,
+		Metrics:         benchmark.BenchMetrics(),
 		DecisionMetric:  benchmark.DecisionMetric,
 	}, nil
 }

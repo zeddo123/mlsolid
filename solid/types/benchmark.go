@@ -18,12 +18,18 @@ type Bench struct {
 	AutoTag        bool
 	Tag            string `validate:"required"`
 	DecisionMetric string
-	Registries     []string `validate:"required"`
-	Metrics        []string `validate:"required"`
-	DatasetName    string   `validate:"required"`
-	DatasetURL     string   `validate:"required,url"`
+	Registries     []string      `validate:"required"`
+	Metrics        []BenchMetric `validate:"required"`
+	DatasetName    string        `validate:"required"`
+	DatasetURL     string        `validate:"required,url"`
 	FromS3         bool
 	Timestamp      time.Time `validate:"required"`
+}
+
+// BenchMetric represents a benchmark metric.
+type BenchMetric struct {
+	Name     string `json:"name"`
+	DescSort bool   `json:"descSort"`
 }
 
 // UpdateBench struct used to update a benchmark.
@@ -78,6 +84,16 @@ func (b *Bench) Validate() error {
 func (b *Bench) Sanatize() {
 	b.Name = SanatizeName(b.Name)
 	b.DatasetName = strings.TrimSpace(b.DatasetName)
+}
+
+// BenchMetrics returns the names of metrics tracked.
+func (b *Bench) BenchMetrics() []string {
+	metrics := make([]string, len(b.Metrics))
+	for i, m := range b.Metrics {
+		metrics[i] = m.Name
+	}
+
+	return metrics
 }
 
 // SanatizeName sanatizes a name by removing any whitespace

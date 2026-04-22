@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -104,17 +106,24 @@ func (r *RedisStore) RemBenchmarkRegistries(ctx context.Context, benchID string,
 }
 
 // AddBenchmarkMetrics adds metrics to a benchmark.
-func (r *RedisStore) AddBenchmarkMetrics(ctx context.Context, benchID string, metrics []string) error {
+func (r *RedisStore) AddBenchmarkMetrics(ctx context.Context, benchID string, metrics []types.BenchMetric) error {
 	key := r.makeBenchmarkMetricsKey(benchID)
 
-	ms := make([]any, len(metrics))
-	for i, m := range metrics {
-		ms[i] = m
+	hash := make(map[string]any, len(metrics))
+	for _, m := range metrics {
+		info, err := json.Marshal(m)
+		if err != nil {
+			log.Println("could not marshal metric to json: %s", err)
+
+			continue
+		}
+
+		hash[m.Name] = info
 	}
 
-	_, err := r.Client.SAdd(ctx, key, ms...).Result()
+	_, err := r.Client.HSet(ctx, key, hash).Result()
 	if err != nil {
-		return fmt.Errorf("could not set benchmark metrics: %w", err)
+		return fmt.Errorf("could not set benchmark metrics hash: %w", err)
 	}
 
 	return nil
@@ -122,12 +131,7 @@ func (r *RedisStore) AddBenchmarkMetrics(ctx context.Context, benchID string, me
 
 // RemBenchmarkMetrics removes metrics from a benchmark.
 func (r *RedisStore) RemBenchmarkMetrics(ctx context.Context, benchID string, metrics []string) error {
-	ms := make([]any, len(metrics))
-	for i, m := range metrics {
-		ms[i] = m
-	}
-
-	_, err := r.Client.SRem(ctx, r.makeBenchmarkMetricsKey(benchID), ms...).Result()
+	_, err := r.Client.HDel(ctx, r.makeBenchmarkMetricsKey(benchID), metrics...).Result()
 	if err != nil {
 		return fmt.Errorf("could not remove benchmark metrics: %w", err)
 	}
@@ -234,15 +238,28 @@ func (r *RedisStore) Benchmark(ctx context.Context, benchID string) (*types.Benc
 }
 
 // BenchmarkMetrics pulls metrics linked to a benchmark.
-func (r *RedisStore) BenchmarkMetrics(ctx context.Context, benchID string) ([]string, error) {
+func (r *RedisStore) BenchmarkMetrics(ctx context.Context, benchID string) ([]types.BenchMetric, error) {
 	key := r.makeBenchmarkMetricsKey(benchID)
 
-	registries, err := r.Client.SMembers(ctx, key).Result()
+	metrics, err := r.Client.HGetAll(ctx, key).Result()
 	if err != nil {
 		return nil, fmt.Errorf("could not pull benchmark metrics: %w", err)
 	}
 
-	return registries, nil
+	benchMetrics := make([]types.BenchMetric, 0, len(metrics))
+
+	metric := types.BenchMetric{} //nolint: exhaustruct
+
+	for _, v := range metrics {
+		err := json.Unmarshal([]byte(v), &metric)
+		if err != nil {
+			return nil, fmt.Errorf("could not unmarshall metric: %w", err)
+		}
+
+		benchMetrics = append(benchMetrics, metric)
+	}
+
+	return benchMetrics, nil
 }
 
 // BenchmarkRegistries pulls model registries linked to a benchmark.

@@ -232,16 +232,23 @@ message SetBenchmarkContainerResponse {
   bool set = 1;
 }
 
+message BenchmarkMetric {
+  string name = 1;
+  bool desc_sort = 2;
+
+}
+
 message BenchmarkRequest {
   string benchmark_id = 1;
 }
+
 message BenchmarkResponse {
   string name = 1;
   bool eager_start = 2;
   bool auto_tag = 3;
   string tag = 4;
   repeated string model_registries = 5;
-  repeated string metrics = 6;
+  repeated BenchmarkMetric metrics = 6;
   string decision_metric = 7;
   string dataset_name = 8;
   string dataset_url = 9;
@@ -255,7 +262,7 @@ message CreateBenchmarkRequest {
   bool auto_tag = 3;
   string tag = 4;
   repeated string model_registries = 5;
-  repeated string metrics = 6;
+  repeated BenchmarkMetric metrics = 6;
   string decision_metric = 7;
   string dataset_name = 8;
   string dataset_url = 9;
@@ -281,7 +288,7 @@ message UpdateBenchmarkRequest {
   optional string tag = 3;
   repeated string add_registires = 4;
   repeated string remove_registries = 5;
-  repeated string add_metrics = 6;
+  repeated BenchmarkMetric add_metrics = 6;
   repeated string remove_metrics = 7;
   optional string decision_metric = 8;
   string benchmark_id = 9;
@@ -291,7 +298,7 @@ message UpdateBenchmarkResponse {
   bool auto_tag = 2;
   string tag = 3;
   repeated string model_registries = 4;
-  repeated string metrics = 5;
+  repeated BenchmarkMetric metrics = 5;
   string decision_metric = 6;
 }
 
@@ -307,10 +314,10 @@ message BenchmarkRunsRequest {
   string benchmark_id = 1;
 }
 message BenchmarkRunsResponse {
-  repeated Metrics runs = 1;
+  repeated RunMetrics runs = 1;
 }
 
-message Metrics {
+message RunMetrics {
   map<string, float> metrics = 1;
   string registry = 2;
   int64 version = 3;
@@ -323,7 +330,7 @@ message BestModelRequest {
 }
 
 message BestModelResponse {
-  map<string, Metrics> best_models = 1;
+  map<string, RunMetrics> best_models = 1;
 }
 
 message BenchmarksRequest {}
