@@ -11,6 +11,8 @@ import (
 type Config struct {
 	Prod bool `mapstructure:"prod"`
 
+	APIKeyAccess bool `mapstructure:"api_key_access"`
+
 	APIPort  string `mapstructure:"api_port"`
 	GrpcPort string `mapstructure:"grpc_port"`
 
@@ -40,6 +42,8 @@ func LoadConfig(path string) (Config, error) {
 	viper.AddConfigPath("/etc/mlsolid/")
 
 	viper.SetDefault("prod", "true")
+
+	viper.SetDefault("api_key_access", false)
 
 	viper.SetDefault("api_port", "8050")
 	viper.SetDefault("grpc_port", "5000")
