@@ -3,8 +3,8 @@ module github.com/zeddo123/mlsolid
 go 1.25.0
 
 require (
-	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.6.1-20260421185339-2f9372d9137f.1
-	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260421185339-2f9372d9137f.1
+	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.6.1-20260422163453-6572fc0b74cf.1
+	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260422163453-6572fc0b74cf.1
 	github.com/anandvarma/namegen v1.1.1
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16

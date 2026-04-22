@@ -450,7 +450,7 @@ func (s *Service) Benchmark(ctx context.Context,
 		Tag:             bench.Tag,
 		DecisionMetric:  bench.DecisionMetric,
 		ModelRegistries: bench.Registries,
-		Metrics:         bench.BenchMetrics(),
+		Metrics:         parseBenchMetrics(bench.Metrics),
 		DatasetName:     bench.DatasetName,
 		DatasetUrl:      bench.DatasetURL,
 		FromS3:          bench.FromS3,
@@ -459,12 +459,6 @@ func (s *Service) Benchmark(ctx context.Context,
 
 // CreateBenchmark grpc method to create a new benchmark.
 func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenchmarkRequest) (*mlsolidv1.CreateBenchmarkResponse, error) {
-	metrics := make([]types.BenchMetric, len(req.GetMetrics()))
-
-	for i, m := range req.GetMetrics() {
-		metrics[i] = types.BenchMetric{Name: m}
-	}
-
 	id, created, err := s.Controller.CreateBenchmark(ctx, types.Bench{
 		Timestamp:      time.Now(),
 		Paused:         false,
@@ -474,7 +468,7 @@ func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenc
 		Tag:            req.GetTag(),
 		DecisionMetric: req.GetDecisionMetric(),
 		Registries:     req.GetModelRegistries(),
-		Metrics:        metrics,
+		Metrics:        parseBenchmarkMetrics(req.GetMetrics()),
 		DatasetName:    req.GetDatasetName(),
 		DatasetURL:     req.GetDatasetUrl(),
 		FromS3:         req.GetFromS3(),
@@ -512,13 +506,7 @@ func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenc
 	}
 
 	if len(req.GetAddMetrics()) > 0 {
-		metrics := make([]types.BenchMetric, len(req.GetAddMetrics()))
-		for i, m := range req.GetAddMetrics() {
-			metrics[i] = types.BenchMetric{
-				Name: m,
-			}
-		}
-		err := s.Controller.AddBenchmarkMetrics(ctx, req.GetBenchmarkId(), metrics)
+		err := s.Controller.AddBenchmarkMetrics(ctx, req.GetBenchmarkId(), parseBenchmarkMetrics(req.GetAddMetrics()))
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -555,7 +543,7 @@ func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenc
 		AutoTag:         benchmark.AutoTag,
 		Tag:             benchmark.Tag,
 		ModelRegistries: benchmark.Registries,
-		Metrics:         benchmark.BenchMetrics(),
+		Metrics:         parseBenchMetrics(benchmark.Metrics),
 		DecisionMetric:  benchmark.DecisionMetric,
 	}, nil
 }
@@ -574,14 +562,14 @@ func (s *Service) BenchmarkRuns(ctx context.Context,
 		return nil, status.Error(codes.NotFound, "could not pull benchmark runs")
 	}
 
-	rs := make([]*mlsolidv1.Metrics, len(runs))
+	rs := make([]*mlsolidv1.RunMetrics, len(runs))
 
 	for i, run := range runs {
 		if run == nil {
 			continue
 		}
 
-		rs[i] = &mlsolidv1.Metrics{
+		rs[i] = &mlsolidv1.RunMetrics{
 			Registry:  run.Registry,
 			Version:   run.Version,
 			Timestamp: timestamppb.New(run.Timestamp),
@@ -595,13 +583,25 @@ func (s *Service) BenchmarkRuns(ctx context.Context,
 }
 
 // BestModel rpc method.
-func (s *Service) BestModel(ctx context.Context, req *mlsolidv1.BestModelRequest) (*mlsolidv1.BestModelResponse, error) {
-	_, err := s.Controller.BestRuns(ctx, req.GetBenchmarkId(), req.GetMetric())
+func (s *Service) BestModel(ctx context.Context,
+	req *mlsolidv1.BestModelRequest,
+) (*mlsolidv1.BestModelResponse, error) {
+	runs, err := s.Controller.BestRuns(ctx, req.GetBenchmarkId(), req.GetMetrics()...)
 	if err != nil {
 		return nil, ParseError(err)
 	}
 
-	resp := &mlsolidv1.BestModelResponse{}
+	best := make(map[string]*mlsolidv1.RunMetrics, len(runs))
+	for k, v := range runs {
+		best[k] = &mlsolidv1.RunMetrics{
+			Registry:  v.Registry,
+			Version:   v.Version,
+			Timestamp: timestamppb.New(v.Timestamp),
+			Metrics:   v.Metrics,
+		}
+	}
 
-	return resp, status.Error(codes.Unimplemented, "BestModel is not implemented yet")
+	return &mlsolidv1.BestModelResponse{
+		BestModels: best,
+	}, nil
 }

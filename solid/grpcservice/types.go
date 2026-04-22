@@ -152,3 +152,25 @@ func parseModelRegistry(r *types.ModelRegistry) *mlsolidv1.ModelRegistryResponse
 
 	return resp
 }
+
+func parseBenchMetrics(metrics []types.BenchMetric) []*mlsolidv1.BenchmarkMetric {
+	out := make([]*mlsolidv1.BenchmarkMetric, len(metrics))
+	for i, m := range metrics {
+		out[i] = &mlsolidv1.BenchmarkMetric{
+			Name:     m.Name,
+			DescSort: m.DescSort,
+		}
+	}
+
+	return out
+}
+
+func parseBenchmarkMetrics(metrics []*mlsolidv1.BenchmarkMetric) []types.BenchMetric {
+	out := make([]types.BenchMetric, len(metrics))
+
+	for i, m := range metrics {
+		out[i] = types.BenchMetric{Name: m.Name, DescSort: m.DescSort}
+	}
+
+	return out
+}
