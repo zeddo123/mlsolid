@@ -235,7 +235,6 @@ message SetBenchmarkContainerResponse {
 message BenchmarkMetric {
   string name = 1;
   bool desc_sort = 2;
-
 }
 
 message BenchmarkRequest {
