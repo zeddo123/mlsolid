@@ -15,7 +15,7 @@ func (c *Controller) CreateBenchmark(ctx context.Context, b types.Bench) (string
 	}
 
 	b.GenerateID()
-	b.Sanatize()
+	b.Sanitize()
 
 	created, err := c.Redis.CreateBenchmark(ctx, b)
 	if err != nil {
@@ -232,4 +232,23 @@ func (c *Controller) RemBenchmarkMetrics(ctx context.Context, benchID string, me
 	}
 
 	return nil
+}
+
+// BestRuns returns the best run for each metric selected.
+func (c *Controller) BestRuns(ctx context.Context, benchID string,
+	metrics ...string,
+) (map[string]*types.BenchRun, error) {
+	metrics = types.SanitizeNames(metrics)
+
+	metricsInfo, err := c.Redis.SelectBenchmarkMetrics(ctx, benchID, metrics)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting metrics: %w", err)
+	}
+
+	runs, err := c.Redis.BenchmarkRuns(ctx, benchID)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting benchmark runs: %w", err)
+	}
+
+	return types.BestRuns(runs, metricsInfo...), nil
 }

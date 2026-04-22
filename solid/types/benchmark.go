@@ -63,6 +63,14 @@ type BenchEvent struct {
 	Tag         string
 }
 
+// NewBenchMetric creates a new bench metric and sanitizes its name.
+func NewBenchMetric(name string, descSort bool) BenchMetric {
+	return BenchMetric{
+		Name:     SanitizeName(name),
+		DescSort: descSort,
+	}
+}
+
 // GenerateID generates a new ID.
 func (b *Bench) GenerateID() {
 	b.ID = uuid.NewString()
@@ -80,9 +88,9 @@ func (b *Bench) Validate() error {
 	return nil
 }
 
-// Sanatize validates and cleans benchmark fields.
-func (b *Bench) Sanatize() {
-	b.Name = SanatizeName(b.Name)
+// Sanitize validates and cleans benchmark fields.
+func (b *Bench) Sanitize() {
+	b.Name = SanitizeName(b.Name)
 	b.DatasetName = strings.TrimSpace(b.DatasetName)
 }
 
@@ -96,31 +104,57 @@ func (b *Bench) BenchMetrics() []string {
 	return metrics
 }
 
-// SanatizeName sanatizes a name by removing any whitespace
-// and converting the string to lower case.
-func SanatizeName(name string) string {
+// SanitizedMetrics returns a metrics with sanitized metric names.
+func (br *BenchRun) SanitizedMetrics() map[string]float32 {
+	metrics := make(map[string]float32, len(br.Metrics))
+
+	for k, v := range br.Metrics {
+		metrics[SanitizeName(k)] = v
+	}
+
+	return metrics
+}
+
+// SanitizeName sanatizes a name by removing
+// any whitespace and converting the string to lower case.
+func SanitizeName(name string) string {
 	return strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(name)), "-"))
 }
 
+// SanitizeNames sanitizes a list of names in place.
+func SanitizeNames(names []string) []string {
+	for i, name := range names {
+		names[i] = SanitizeName(name)
+	}
+
+	return names
+}
+
 // BestRuns returns the best performing bechmark run for each metric provided.
-func BestRuns(runs []*BenchRun, metrics ...string) map[string]*BenchRun {
+func BestRuns(runs []*BenchRun, metrics ...BenchMetric) map[string]*BenchRun {
 	out := make(map[string]*BenchRun, len(metrics))
 
 	for _, run := range runs {
 		for _, metric := range metrics {
-			if out[metric] == nil {
-				out[metric] = run
-
-				continue
-			}
-
-			val, ok := run.Metrics[metric]
+			val, ok := run.Metrics[metric.Name]
 			if !ok {
 				continue
 			}
 
-			if out[metric].Metrics[metric] < val {
-				out[metric] = run
+			if out[metric.Name] == nil {
+				out[metric.Name] = run
+
+				continue
+			}
+
+			if metric.DescSort {
+				if out[metric.Name].Metrics[metric.Name] > val {
+					out[metric.Name] = run
+				}
+			} else {
+				if out[metric.Name].Metrics[metric.Name] < val {
+					out[metric.Name] = run
+				}
 			}
 		}
 	}

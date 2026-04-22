@@ -8,7 +8,7 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
-func TestSanatizeName(t *testing.T) {
+func TestSanitizeName(t *testing.T) {
 	t.Parallel()
 
 	tt := []struct {
@@ -37,7 +37,7 @@ func TestSanatizeName(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tc.Out, types.SanatizeName(tc.Name))
+			assert.Equal(t, tc.Out, types.SanitizeName(tc.Name))
 		})
 	}
 }
@@ -46,10 +46,16 @@ func TestBestRuns(t *testing.T) {
 	t.Parallel()
 
 	tt := []struct {
+		metrics []types.BenchMetric
 		runs    []*types.BenchRun
 		results map[string]*types.BenchRun
 	}{
 		{
+			metrics: []types.BenchMetric{
+				{Name: "loss", DescSort: true},
+				{Name: "acc", DescSort: false},
+				{Name: "mae", DescSort: true},
+			},
 			runs: []*types.BenchRun{
 				{
 					Registry: "registry#1",
@@ -70,31 +76,22 @@ func TestBestRuns(t *testing.T) {
 					Version:  8,
 					Metrics: map[string]float32{
 						"loss": 50.3,
-						"acc":  0.23,
+						"acc":  0.93,
 						"mae":  0.37,
 					},
 				},
 				{
 					Registry: "registry#1",
-					Version:  8,
+					Version:  9,
 					Metrics: map[string]float32{
 						"loss": 50.3,
 						"acc":  0.23,
-						"mae":  0.99,
+						"mae":  0.09,
 					},
 				},
 			},
 			results: map[string]*types.BenchRun{
 				"loss": {
-					Registry: "registry#1",
-					Version:  8,
-					Metrics: map[string]float32{
-						"loss": 50.3,
-						"acc":  0.23,
-						"mae":  0.37,
-					},
-				},
-				"acc": {
 					Registry: "registry#1",
 					Version:  4,
 					Metrics: map[string]float32{
@@ -103,13 +100,22 @@ func TestBestRuns(t *testing.T) {
 						"mae":  0.87,
 					},
 				},
-				"mae": {
+				"acc": {
 					Registry: "registry#1",
 					Version:  8,
 					Metrics: map[string]float32{
 						"loss": 50.3,
+						"acc":  0.93,
+						"mae":  0.37,
+					},
+				},
+				"mae": {
+					Registry: "registry#1",
+					Version:  9,
+					Metrics: map[string]float32{
+						"loss": 50.3,
 						"acc":  0.23,
-						"mae":  0.99,
+						"mae":  0.09,
 					},
 				},
 			},
@@ -120,7 +126,7 @@ func TestBestRuns(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
-			result := types.BestRuns(tc.runs, "loss", "acc", "mae")
+			result := types.BestRuns(tc.runs, tc.metrics...)
 			t.Log(result)
 			require.Len(t, result, 3)
 

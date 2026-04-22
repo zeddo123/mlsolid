@@ -596,12 +596,10 @@ func (s *Service) BenchmarkRuns(ctx context.Context,
 
 // BestModel rpc method.
 func (s *Service) BestModel(ctx context.Context, req *mlsolidv1.BestModelRequest) (*mlsolidv1.BestModelResponse, error) {
-	runs, err := s.Controller.BenchmarkRuns(ctx, req.GetBenchmarkId())
+	_, err := s.Controller.BestRuns(ctx, req.GetBenchmarkId(), req.GetMetric())
 	if err != nil {
 		return nil, ParseError(err)
 	}
-
-	_ = types.BestRuns(runs, req.GetMetric())
 
 	resp := &mlsolidv1.BestModelResponse{}
 
