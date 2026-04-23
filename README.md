@@ -1,5 +1,13 @@
-# mlsolid
+<div align="center">
+
 ![mlflow-banner-4](https://github.com/user-attachments/assets/06baeb29-9c30-4efa-af9c-0a485656a520)
+
+<a name="readme-top"></a>
+
+# The MLSolid Platform
+
+A solid & sane MLOps platform. It makes it possible to **R&D**, **benchmark**, and **deploy** your models with ease. Its simple architecture allows for easy deployment and a variety of language support (not just Python)!
+
 [![Docker](https://github.com/zeddo123/mlsolid/actions/workflows/docker-publish.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/docker-publish.yaml)
 [![Build](https://github.com/zeddo123/mlsolid/actions/workflows/build.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/build.yaml)
 [![golangci-lint](https://github.com/zeddo123/mlsolid/actions/workflows/lint.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/lint.yaml)
@@ -7,6 +15,9 @@
 [![.github/workflows/buf-lint.yaml](https://github.com/zeddo123/mlsolid/actions/workflows/buf-lint.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/buf-lint.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zeddo123/mlsolid)](https://goreportcard.com/report/github.com/zeddo123/mlsolid)
 
+</div>
+
+# 🔬 mlsolid
 mlsolid is a solid alternative to mlflow written in Go with Redis as its db backend, and s3 as its artifact storage.
 This project is split in multiple parts. `mlsolid` the server (this repo), [`mlsolidpy`](https://github.com/zeddo123/mlsolidpy) the python client,
 and [solidash](https://github.com/zeddo123/solidash) a visualisation dashboard.
@@ -26,15 +37,18 @@ Under the hood, clients interact with mlsolid through a `gRPC` endpoint. This ch
 and/or download your models.
 Already generated gRPC SDKs for multiple languages are available to download using `buf.build` [here](https://buf.build/zeddo123/mlsolid/sdks)
 
-## Features
+## ✨ Features
 * Experiment tracking with metrics and artifacts
 * Model registry with versioning
+* Automatized Benchmarking
+* Authentication with oauth
 
 ## Overview
-### Solidash interface
+
+### 🌟 Solidash dashboard
 <img width="2550" height="1434" alt="Screenshot From 2026-04-07 01-23-17" src="https://github.com/user-attachments/assets/5ac18f1c-1581-49b9-b0c2-eaad37c2495c" />
 
-### Python client example
+### 🐍 Python client example
 Here are some basic example using our Python client to track your experiments:
 ```Python
 from mlsolidpy.mlsolid import Mlsolid
