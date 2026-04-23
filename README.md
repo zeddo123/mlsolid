@@ -107,7 +107,14 @@ client.artifact(run_id, 'plain_text_file.txt')
 ## Configuration
 Configuration happens through a `yaml` file located either at `./mlsolid.yaml` of the binary or at `/etc/mlsolid/mlsolid.yaml`.
 ```yaml
+root_url: "https://mlsolid_service_url"
+frontend_url: "https://solidash_url"
 prod: true
+
+api_key_access: false # Sets if API Keys are checked when communicating with the grpc endpoints.
+google_client_id: "***"
+google_secret_id: "***"
+google_allowed_domains: "your-org.xyz"
 
 api_port: 8050
 grpc_port: 5000
@@ -121,4 +128,13 @@ s3_key: ""
 s3_secret: ""
 s3_bucket: ""
 s3_region: ""
+
+# Configuration related to benchmarking
+enable_bengine: false # used to enable/disable benchmarking engine
+docker_registry_username: "***"
+docker_registry_password: "***"
+
+# host's source volume used when mlsolid is running in a container
+# and needs to bind datasets & checkpoints volumes to runner
+host_source_volume: "" 
 ```
