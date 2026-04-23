@@ -9,9 +9,14 @@ import (
 
 // Config configuration struct.
 type Config struct {
-	Prod bool `mapstructure:"prod"`
+	RootURL     string `mapstructure:"root_url"`
+	FrontendURL string `mapstructure:"frontend_url"`
+	Prod        bool   `mapstructure:"prod"`
 
-	APIKeyAccess bool `mapstructure:"api_key_access"`
+	APIKeyAccess         bool     `mapstructure:"api_key_access"`
+	GoogleClientID       string   `mapstructure:"google_client_id"`
+	GoogleSecretID       string   `mapstructure:"google_secret_id"`
+	GoogleAllowedDomains []string `mapstructure:"google_allowed_domains"`
 
 	APIPort  string `mapstructure:"api_port"`
 	GrpcPort string `mapstructure:"grpc_port"`
@@ -41,9 +46,14 @@ func LoadConfig(path string) (Config, error) {
 	viper.AddConfigPath(path)
 	viper.AddConfigPath("/etc/mlsolid/")
 
+	viper.SetDefault("root_url", "http://localhost:8050")
+	viper.SetDefault("frontend_url", "http://localhost:5173")
 	viper.SetDefault("prod", "true")
 
 	viper.SetDefault("api_key_access", false)
+	viper.SetDefault("google_client_id", "***")
+	viper.SetDefault("google_secret_id", "***")
+	viper.SetDefault("google_allowed_domains", []string{})
 
 	viper.SetDefault("api_port", "8050")
 	viper.SetDefault("grpc_port", "5000")

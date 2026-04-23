@@ -10,6 +10,7 @@ import (
 	"github.com/zeddo123/mlsolid/solid/bengine"
 	"github.com/zeddo123/mlsolid/solid/controllers"
 	"github.com/zeddo123/mlsolid/solid/grpcservice"
+	"github.com/zeddo123/mlsolid/solid/oauth"
 	"github.com/zeddo123/mlsolid/solid/s3"
 	"github.com/zeddo123/mlsolid/solid/store"
 	"github.com/zeddo123/pubgo"
@@ -78,7 +79,13 @@ func main() {
 	}
 
 	go grpcservice.StartServer(config.GrpcPort, &controller, config.APIKeyAccess)
-	go api.StartServer(config.APIPort, &controller)
+	go api.StartServer(config.APIPort, &controller, oauth.Config{
+		Prod:                 config.Prod,
+		RootURL:              config.RootURL,
+		GoogleClientID:       config.GoogleClientID,
+		GoogleClientSecret:   config.GoogleSecretID,
+		GoogleAllowedDomains: config.GoogleAllowedDomains,
+	})
 
 	select {}
 }
