@@ -16,8 +16,8 @@ func ctxController(ctx *fiber.Ctx) *controllers.Controller {
 }
 
 // BuildRoutes builds v1 endpoint routes.
-func BuildRoutes(f *fiber.App) error {
-	v1 := f.Group("/v1")
+func BuildRoutes(f *fiber.App, middlewares ...fiber.Handler) error {
+	v1 := f.Group("/v1", middlewares...)
 
 	v1.Get("/exps", experiments)
 	v1.Get("/exp/:id", experiment)

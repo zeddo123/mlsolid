@@ -5,6 +5,7 @@
 [![golangci-lint](https://github.com/zeddo123/mlsolid/actions/workflows/lint.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/lint.yaml)
 [![Buf CI](https://github.com/zeddo123/mlsolid/actions/workflows/buf-ci.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/buf-ci.yaml)
 [![.github/workflows/buf-lint.yaml](https://github.com/zeddo123/mlsolid/actions/workflows/buf-lint.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/buf-lint.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/zeddo123/mlsolid)](https://goreportcard.com/report/github.com/zeddo123/mlsolid)
 
 mlsolid is a solid alternative to mlflow written in Go with Redis as its db backend, and s3 as its artifact storage.
 This project is split in multiple parts. `mlsolid` the server (this repo), [`mlsolidpy`](https://github.com/zeddo123/mlsolidpy) the python client,
