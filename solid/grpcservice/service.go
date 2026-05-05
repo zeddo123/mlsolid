@@ -511,7 +511,7 @@ func (s *Service) ToggleBenchmark(ctx context.Context, req *mlsolidv1.ToggleBenc
 	return &mlsolidv1.ToggleBenchmarkResponse{Paused: req.GetPaused()}, nil
 }
 
-// UpdateBenchmark updates an existant benchmark.
+// UpdateBenchmark updates an existent benchmark.
 func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenchmarkRequest) (*mlsolidv1.UpdateBenchmarkResponse, error) {
 	err := s.Controller.UpdateBenchmark(ctx, req.GetBenchmarkId(), types.UpdateBench{
 		Name:           req.GetName(),

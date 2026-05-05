@@ -169,7 +169,7 @@ func parseBenchmarkMetrics(metrics []*mlsolidv1.BenchmarkMetric) []types.BenchMe
 	out := make([]types.BenchMetric, len(metrics))
 
 	for i, m := range metrics {
-		out[i] = types.BenchMetric{Name: m.Name, DescSort: m.DescSort}
+		out[i] = types.BenchMetric{Name: m.GetName(), DescSort: m.GetDescSort()}
 	}
 
 	return out

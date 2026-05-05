@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	// APIKeyPattern pattern that represents a api key
+	// APIKeyPattern pattern that represents a api key.
 	APIKeyPattern = "api-key:%s"
 
 	// ExpInfoKeyPattern is a pattern to a key that holds
