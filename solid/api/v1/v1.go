@@ -31,5 +31,14 @@ func BuildRoutes(f *fiber.App, middlewares ...fiber.Handler) error {
 	v1.Get("/registries", registries)
 	v1.Get("/registry/:id", registry)
 
+	v1.Get("/benchmarks", benchmarks)
+	v1.Get("/benchmark/:id", benchmark)
+	v1.Post("/benchmark", createBenchmark)
+	v1.Patch("/benchmark/:id/toggle", toogleBenchmark)
+	v1.Patch("/benchmark/:id", updateBenchmark)
+	v1.Delete("/benchmark/:id", deleteBenchmark)
+	v1.Get("/benchmark/:id/runs", benchmarkRuns)
+	v1.Get("/benchmark/:id/best", benchmarkBest)
+
 	return nil
 }

@@ -1,6 +1,10 @@
 package v1
 
-import "time"
+import (
+	"time"
+
+	"github.com/zeddo123/mlsolid/solid/types"
+)
 
 // Experiment struct returned by Experiment endpoint.
 type Experiment struct {
@@ -27,4 +31,23 @@ type Registry struct {
 
 type entryInfo struct {
 	CreatedAt time.Time `json:"createdAt,format:datetime"`
+}
+
+// CreateBenchmarkRequest represents a request to create a new benchmark.
+type CreateBenchmarkRequest struct {
+	Name           string
+	EagerStart     bool
+	AutoTag        bool
+	Tag            string
+	DecisionMetric string
+	Registries     []string
+	Metrics        []types.BenchMetric
+	DatasetName    string
+	DatasetURL     string
+	DatasetFromS3  bool
+}
+
+// BechmarkBestRequest represents a request to pull best models for each metric.
+type BechmarkBestRequest struct {
+	Metrics []string
 }
