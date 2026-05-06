@@ -21,6 +21,7 @@ type Config struct {
 	GoogleClientID       string
 	GoogleClientSecret   string
 	GoogleAllowedDomains []string
+	FrontendURL          string
 }
 
 // NewAuth inits oauth providers.

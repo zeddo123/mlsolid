@@ -5,9 +5,19 @@ import (
 )
 
 func registries(ctx *fiber.Ctx) error {
-	_ = ctxController(ctx)
+	ctrl := ctxController(ctx)
 
-	return nil
+	registries, err := ctrl.ModelRegistriesID(ctx.Context())
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err,
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"registries": registries,
+		"details":    "registries retrieved successfully",
+	})
 }
 
 func registry(ctx *fiber.Ctx) error {
@@ -17,7 +27,7 @@ func registry(ctx *fiber.Ctx) error {
 	reg, err := ctrl.ModelRegistry(ctx.Context(), id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"details": err.Error(),
+			"error": err,
 		})
 	}
 

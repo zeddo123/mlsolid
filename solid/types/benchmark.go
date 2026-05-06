@@ -11,19 +11,19 @@ import (
 
 // Bench represents a benchmark.
 type Bench struct {
-	ID             string `validate:"required"`
-	Name           string `validate:"required"`
-	Paused         bool
-	EagerStart     bool
-	AutoTag        bool
-	Tag            string `validate:"required"`
-	DecisionMetric string
-	Registries     []string      `validate:"required"`
-	Metrics        []BenchMetric `validate:"required"`
-	DatasetName    string        `validate:"required"`
-	DatasetURL     string        `validate:"required,url"`
-	FromS3         bool
-	Timestamp      time.Time `validate:"required"`
+	ID             string        `json:"id"             validate:"required"`
+	Name           string        `json:"name"           validate:"required"`
+	Paused         bool          `json:"paused"`
+	EagerStart     bool          `json:"eagerStart"`
+	AutoTag        bool          `json:"autoTag"`
+	Tag            string        `json:"tag"            validate:"required"`
+	DecisionMetric string        `json:"decisionMetric"`
+	Registries     []string      `json:"registries"     validate:"required"`
+	Metrics        []BenchMetric `json:"metrics"        validate:"required"`
+	DatasetName    string        `json:"datasetName"    validate:"required"`
+	DatasetURL     string        `json:"datasetUrl"     validate:"required,url"`
+	FromS3         bool          `json:"fromS3"`
+	Timestamp      time.Time     `json:"timestamp"      validate:"required"`
 }
 
 // BenchMetric represents a benchmark metric.

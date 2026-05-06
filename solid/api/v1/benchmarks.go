@@ -37,8 +37,8 @@ func benchmark(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"bench":   bench,
-		"details": "benchmark retrieved successfully",
+		"benchmark": bench,
+		"details":   "benchmark retrieved successfully",
 	})
 }
 

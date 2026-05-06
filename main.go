@@ -85,6 +85,7 @@ func main() {
 		GoogleClientID:       config.GoogleClientID,
 		GoogleClientSecret:   config.GoogleSecretID,
 		GoogleAllowedDomains: config.GoogleAllowedDomains,
+		FrontendURL:          config.FrontendURL,
 	})
 
 	select {}
