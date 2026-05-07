@@ -180,86 +180,18 @@ func (r *RedisStore) Benchmark(ctx context.Context, benchID string) (*types.Benc
 		return nil, fmt.Errorf("could not find benchmark %s", benchID)
 	}
 
-	mapping, err := r.Client.HGetAll(ctx, key).Result()
-	if err != nil {
-		return nil, fmt.Errorf("could not pull benchmark: %w", err)
-	}
+	data := r.Client.HGetAll(ctx, key)
+	registries := r.Client.SMembers(ctx, r.makeBenchmarkRegistriesKey(benchID))
+	metrics := r.Client.HGetAll(ctx, r.makeBenchmarkMetricsKey(benchID))
 
-	paused, err := strconv.ParseBool(mapping["Paused"])
-	if err != nil {
-		return nil, fmt.Errorf("could not parse benchmark: %w", err)
-	}
-
-	eager, err := strconv.ParseBool(mapping["EagerStart"])
-	if err != nil {
-		return nil, fmt.Errorf("could not parse benchmark: %w", err)
-	}
-
-	froms3, err := strconv.ParseBool(mapping["FromS3"])
-	if err != nil {
-		return nil, fmt.Errorf("could not parse benchmark: %w", err)
-	}
-
-	autotag, err := strconv.ParseBool(mapping["AutoTag"])
-	if err != nil {
-		return nil, fmt.Errorf("could not parse benchmark: %w", err)
-	}
-
-	timestamp, err := time.Parse(time.RFC3339, mapping["FromS3"])
-	if err != nil {
-		return nil, fmt.Errorf("could not parse benchmark timestamp: %w", err)
-	}
-
-	registries, err := r.BenchmarkRegistries(ctx, benchID)
-	if err != nil {
-		return nil, err
-	}
-
-	metrics, err := r.BenchmarkMetrics(ctx, benchID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &types.Bench{
-		ID:             benchID,
-		Name:           mapping["Name"],
-		Paused:         paused,
-		EagerStart:     eager,
-		AutoTag:        autotag,
-		Tag:            mapping["Tag"],
-		DecisionMetric: mapping["DecisionMetric"],
-		DatasetName:    mapping["DatasetName"],
-		DatasetURL:     mapping["DatasetURL"],
-		FromS3:         froms3,
-		Timestamp:      timestamp,
-		Registries:     registries,
-		Metrics:        metrics,
-	}, nil
+	return parseBenchmark(benchID, data, metrics, registries)
 }
 
 // BenchmarkMetrics pulls metrics linked to a benchmark.
 func (r *RedisStore) BenchmarkMetrics(ctx context.Context, benchID string) ([]types.BenchMetric, error) {
 	key := r.makeBenchmarkMetricsKey(benchID)
 
-	metrics, err := r.Client.HGetAll(ctx, key).Result()
-	if err != nil {
-		return nil, fmt.Errorf("could not pull benchmark metrics: %w", err)
-	}
-
-	benchMetrics := make([]types.BenchMetric, 0, len(metrics))
-
-	metric := types.BenchMetric{} //nolint: exhaustruct
-
-	for _, v := range metrics {
-		err := json.Unmarshal([]byte(v), &metric)
-		if err != nil {
-			return nil, fmt.Errorf("could not unmarshall metric: %w", err)
-		}
-
-		benchMetrics = append(benchMetrics, metric)
-	}
-
-	return benchMetrics, nil
+	return parseBenchmarkMetrics(r.Client.HGetAll(ctx, key))
 }
 
 // SelectBenchmarkMetrics searches for metrics linked to a benchmark.
@@ -384,6 +316,48 @@ func (r *RedisStore) Benchmarks(ctx context.Context) ([]string, error) {
 	return benchs, nil
 }
 
+// BenchmarksWithId returns all benchmarks with specified ids without checking if they exist in the store.
+func (r *RedisStore) BenchmarksWithId(ctx context.Context, ids []string) ([]*types.Bench, error) {
+	type tempResult struct {
+		data       *redis.MapStringStringCmd
+		metrics    *redis.MapStringStringCmd
+		registries *redis.StringSliceCmd
+	}
+
+	results := make([]*types.Bench, len(ids))
+	partialResults := make(map[string]tempResult, len(ids))
+
+	p := r.Client.Pipeline()
+
+	for _, id := range ids {
+		partialResults[id] = tempResult{
+			data:       p.HGetAll(ctx, r.makeBenchmarkKey(id)),
+			registries: p.SMembers(ctx, r.makeBenchmarkRegistriesKey(id)),
+			metrics:    p.HGetAll(ctx, r.makeBenchmarkMetricsKey(id)),
+		}
+	}
+
+	_, err := p.Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed pulling benchmarks: %w", err)
+	}
+
+	for idx, id := range ids {
+		prslt := partialResults[id]
+
+		bench, err := parseBenchmark(id, prslt.data, prslt.metrics, prslt.registries)
+		if err != nil {
+			log.Println("could not parse benchmark:", err)
+
+			continue
+		}
+
+		results[idx] = bench
+	}
+
+	return results, nil
+}
+
 // RegistryBenchmarks returns all benchmarks linked with a registry.
 func (r *RedisStore) RegistryBenchmarks(ctx context.Context, registry string) ([]string, error) {
 	benchs, err := r.Client.SMembers(ctx, r.makeRegistryBenchmarksKey(registry)).Result()
@@ -404,6 +378,88 @@ func (r *RedisStore) BenchmarkExists(ctx context.Context, benchID string) (bool,
 	}
 
 	return c == 1, nil
+}
+
+func parseBenchmark(benchID string, data, metrics *redis.MapStringStringCmd,
+	registries *redis.StringSliceCmd,
+) (*types.Bench, error) {
+	mapping, err := data.Result()
+	if err != nil {
+		return nil, fmt.Errorf("could not pull benchmark: %w", err)
+	}
+
+	paused, err := strconv.ParseBool(mapping["Paused"])
+	if err != nil {
+		return nil, fmt.Errorf("could not parse benchmark: %w", err)
+	}
+
+	eager, err := strconv.ParseBool(mapping["EagerStart"])
+	if err != nil {
+		return nil, fmt.Errorf("could not parse benchmark: %w", err)
+	}
+
+	froms3, err := strconv.ParseBool(mapping["FromS3"])
+	if err != nil {
+		return nil, fmt.Errorf("could not parse benchmark: %w", err)
+	}
+
+	autotag, err := strconv.ParseBool(mapping["AutoTag"])
+	if err != nil {
+		return nil, fmt.Errorf("could not parse benchmark: %w", err)
+	}
+
+	timestamp, err := time.Parse(time.RFC3339, mapping["FromS3"])
+	if err != nil {
+		return nil, fmt.Errorf("could not parse benchmark timestamp: %w", err)
+	}
+
+	regs, err := registries.Result()
+	if err != nil {
+		return nil, fmt.Errorf("could not get registries: %w", err)
+	}
+
+	mets, err := parseBenchmarkMetrics(metrics)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse benchmark metrics: %w", err)
+	}
+
+	return &types.Bench{
+		ID:             benchID,
+		Name:           mapping["Name"],
+		Paused:         paused,
+		EagerStart:     eager,
+		AutoTag:        autotag,
+		Tag:            mapping["Tag"],
+		DecisionMetric: mapping["DecisionMetric"],
+		DatasetName:    mapping["DatasetName"],
+		DatasetURL:     mapping["DatasetURL"],
+		FromS3:         froms3,
+		Timestamp:      timestamp,
+		Registries:     regs,
+		Metrics:        mets,
+	}, nil
+}
+
+func parseBenchmarkMetrics(metrics *redis.MapStringStringCmd) ([]types.BenchMetric, error) {
+	mapping, err := metrics.Result()
+	if err != nil {
+		return nil, fmt.Errorf("could not pull benchmark metrics: %w", err)
+	}
+
+	benchMetrics := make([]types.BenchMetric, 0, len(mapping))
+
+	metric := types.BenchMetric{} //nolint: exhaustruct
+
+	for _, v := range mapping {
+		err := json.Unmarshal([]byte(v), &metric)
+		if err != nil {
+			return nil, fmt.Errorf("could not unmarshall metric: %w", err)
+		}
+
+		benchMetrics = append(benchMetrics, metric)
+	}
+
+	return benchMetrics, nil
 }
 
 func parseBenchRun(m map[string]string) (*types.BenchRun, error) {

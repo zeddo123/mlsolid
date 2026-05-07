@@ -63,6 +63,7 @@ func main() {
 	controller := controllers.Controller{
 		Redis: store,
 		S3:    objectStore,
+		Bus:   bus,
 	}
 
 	if config.EnableBEngine {
