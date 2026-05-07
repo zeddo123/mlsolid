@@ -46,7 +46,7 @@ Already generated gRPC SDKs for multiple languages are available to download usi
 ## Overview
 
 ### 🌟 Solidash dashboard
-<img width="2550" height="1434" alt="Screenshot From 2026-04-07 01-23-17" src="https://github.com/user-attachments/assets/5ac18f1c-1581-49b9-b0c2-eaad37c2495c" />
+<img width="2560" height="1438" alt="Screenshot From 2026-05-07 16-08-41" src="https://github.com/user-attachments/assets/e22ae18b-c062-47c3-8780-b3e045c5bf08" />
 
 ### 🐍 Python client example
 Here are some basic example using our Python client to track your experiments:
