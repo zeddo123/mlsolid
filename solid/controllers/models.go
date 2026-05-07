@@ -41,7 +41,14 @@ func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url
 
 	registry.Add(url, tags...)
 
-	return c.Redis.UpdateModelRegistry(ctx, *registry)
+	err = c.Redis.UpdateModelRegistry(ctx, *registry)
+	if err != nil {
+		return fmt.Errorf("update model registry failed: %w", err)
+	}
+
+	go c.pushBengineEvent(ctx, registryName, registry.LatestVersion())
+
+	return nil
 }
 
 func (c *Controller) AddArtifactToRegistry(ctx context.Context, registryName string, runID string,

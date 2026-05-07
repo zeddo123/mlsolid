@@ -11,7 +11,7 @@ import (
 
 const (
 	// APIKeyPattern pattern that represents a api key.
-	APIKeyPattern = "api-key:%s"
+	APIKeyPattern = "api-key:%s" //nolint: gosec
 
 	// ExpInfoKeyPattern is a pattern to a key that holds
 	// information on experiments.
