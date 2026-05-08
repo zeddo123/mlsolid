@@ -141,12 +141,13 @@ func (c *Controller) Artifact(ctx context.Context, runID string,
 	return &a, body, nil
 }
 
+// Artifacts returns a Map of runID to artifact ids i.e a list of artifact ids for each run.
 func (c *Controller) Artifacts(ctx context.Context,
-	runIds []string,
+	runIDs []string,
 ) (map[string][]string, error) {
-	out := make(map[string][]string, len(runIds))
+	out := make(map[string][]string, len(runIDs))
 
-	for _, id := range runIds {
+	for _, id := range runIDs {
 		runArtifacts, err := c.Redis.Artifacts(ctx, id)
 		if err != nil {
 			continue

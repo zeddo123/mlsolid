@@ -11,8 +11,8 @@ func metrics(ctx *fiber.Ctx) error {
 
 	rs, err := ctrl.RunsFromExp(ctx.Context(), expID)
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"details": err.Error(),
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
 		})
 	}
 
@@ -31,15 +31,22 @@ func metric(ctx *fiber.Ctx) error {
 
 	rs, err := ctrl.RunsFromExp(ctx.Context(), expID)
 	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if len(rs) == 0 {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"details": err.Error(),
+			"error": "no metrics were found",
 		})
 	}
 
 	metric, kind := types.CollectMetric(rs, metricID)
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"metric": metric,
-		"kind":   kind,
+		"details": "metric retrieved successfully",
+		"metric":  metric,
+		"kind":    kind,
 	})
 }

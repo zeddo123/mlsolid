@@ -1,0 +1,477 @@
+openapi: 3.0.0
+info:
+  version: '0.1.0'
+  title: mlsolid REST API
+  description: REST API allowing users to interact with mlsolid.
+
+paths:
+  /login/{provider}:
+  /logout:
+  /authorize:
+  /authorized:
+  /auth/callback/{provider}:
+  /auth/callback/{provider}:
+
+  /v1/exps:
+    get:
+      description: retrieve all experiment with a list of their runs.
+      responses:
+        200:
+          description: successfully retrieved experiments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentsResponse'
+        500:
+          description: could not retrieve experiments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/exp/{id}:
+    get:
+      description: retrieve runs and metrics linked to an experiment
+      parameters:
+        - name: id
+          in: path
+          description: id of the experiment
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: retrieved experiment successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        404:
+          description: could not find experiment runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not retrieve experiment data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/exp/{id}/metrics:
+    get:
+      description: retrieve metrics linked to an experiment
+      parameters:
+        - name: id
+          in: path
+          description: id of the experiment
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: retrieved metrics successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentMetricsResponse'
+        500:
+          description: could not retrieve metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/exp/{id}/metric/{mid}:
+    get:
+      description: retrieve a metric from an experiment
+      parameters:
+        - name: id
+          in: path
+          description: id of the experiment
+          required: true
+          schema:
+            type: string
+        - name: mid
+          in: path
+          description: id of the metric
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: retrieved metric successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentMetricResponse'
+        404:
+          description: could not find metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not retrieve metric
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/exp/{id}/artifacts:
+    get:
+      description: retrieve all artifact ids for each run in the experiment
+      parameters:
+        - name: id
+          in: path
+          description: id of the experiment
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: retrieved artifacts successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentArtifactsResponse'
+        404:
+          description: could not find resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not retrieve artifacts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/artifact/{rid}/{aid}:
+    get:
+      description: retrieve an artifact with a runId and an artifactId
+      parameters:
+        - name: rid
+          in: path
+          description: id of the run
+          required: true
+          schema:
+            type: string
+        - name: aid
+          in: path
+          description: id of the artifact
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: requested artifact file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: could not find resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not retrieve resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/registries:
+    get:
+      description: retrieve all registry names
+      responses:
+        200:
+          description: retrieved registries successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistriesResponse'
+        500:
+          description: could not retrieve resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/registry/{id}:
+    get:
+      description: retrieve a model registry
+      parameters:
+        - name: id
+          in: path
+          description: id of the model registry
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: retrieved model registry successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistryResponse'
+        404:
+          description: could not find resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not retrieve resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        
+  /v1/benchmarks:
+    get:
+      description: retrieve list of benchmarks
+      responses:
+        200:
+          description: retrieved benchmarks successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarksResponse'
+        500:
+          description: could not retrieve artifacts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/benchmark:
+  /v1/benchmark/{id}:
+    get:
+    patch:
+    delete:
+  /v1/benchmark/{id}/toggle:
+  /v1/benchmark/{id}/runs:
+  /v1/benchmark/{id}/best:
+
+components:
+  schemas:
+    ExperimentsResponse:
+      type: object
+      required:
+        - details
+        - exps
+      properties:
+        details:
+          type: string
+          description: description of successful operation
+        exps:
+          type: object
+          description: Map of experiment ids to list of recorded run ids.
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            exp1: ["run#1", "run#2"]
+            exp2: ["run#3"]
+    ExperimentResponse:
+      type: object
+      required:
+        - details
+        - runs
+        - metrics
+      properties:
+        details:
+          type: string
+          description: description of successfully operation
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunInfo'
+          description: array of object with run information
+        metrics:
+          type: array
+          description: array of all run ids linked to the experiment.
+          items:
+            type: string
+
+    ExperimentMetricsResponse:
+      type: object
+      required:
+        - details
+        - metrics
+      properties:
+        details:
+          type: string
+          description: description of successfully operation
+        metrics:
+          type: array
+          description: array of all run ids linked to the experiment.
+          items:
+            type: string
+
+    ExperimentMetricResponse:
+      type: object
+      required:
+        - details
+        - metric
+        - kind
+      properties:
+        details:
+          type: string
+          description: description of successfully operation
+        kind:
+          type: string
+          enum:
+            - metric/continuous
+            - metric/multival
+            - metric/single-numeric
+            - metric/single
+            - metric/complex
+        metric:
+          type: object
+          description: Map of run id to list of metric vals
+          additionalProperties:
+            type: array
+          example:
+            run1: [1, 23, 342, 454]
+            run2: ["34", "23", 342.0, 454]
+            run3: []
+            run4: ["/path/to/smth"]
+
+    ExperimentArtifactsResponse:
+      type: object
+      required:
+        - details
+        - artifacts
+      properties:
+        details:
+          type: string
+          description: description of successful operation
+        artifacts:
+          type: object
+          description: Map of run id to list of artifact ids
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            run1: ["log.txt", "artifact#1"]
+
+    RegistriesResponse:
+      type: object
+      required:
+        - details
+        - registries
+      properties:
+        details:
+          type: string
+          description: description of successfully operation
+        registries:
+          type: array
+          items:
+            type: string
+
+    RegistryResponse:
+      type: object
+      required:
+        - details
+        - registry
+      properties:
+        details:
+          type: string
+          description: description of successful operation
+        registry:
+          $ref: '#/components/schemas/Registry'
+
+    BenchmarksResponse:
+      type: object
+      required:
+        - details
+        - benchmarks
+      properties:
+        details:
+          type: string
+          description: description of successfully operation
+        benchmarks:
+          type: array
+          items:
+            type: string
+          description: array of benchmark ids
+
+    RunInfo:
+      type: object
+      required:
+        - runId
+        - createdAt
+        - color
+      properties:
+        runId:
+          type: string
+          example: "run#234"
+        createdAt:
+          type: string
+          format: date-time
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: details on why operation was unsuccessful
+
+    Registry:
+      type: object
+      properties:
+        details:
+          type: string
+          description: Registry details
+        name:
+          type: string
+          description: Registry name
+        lastVer:
+          type: integer
+          format: int64
+          description: Last version number
+        tags:
+          type: object
+          description: Map of tag names to lists of integer IDs
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        entriesInfo:
+          type: object
+          description: Map of entry IDs to their information
+          additionalProperties:
+            $ref: '#/components/schemas/EntryInfo'
+      required:
+        - details
+        - name
+        - lastVer
+        - tags
+        - createdAt
+        - entriesInfo
+
+    EntryInfo:
+      type: object
+      description: model entry information
+      properties:
+        createdAt:
+          type: string
