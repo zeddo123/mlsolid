@@ -8,9 +8,55 @@ paths:
   /login/{provider}:
   /logout:
   /authorize:
+    get:
+      description: genereate API key for gRPC endpoints
+      responses:
+        200:
+          description: API generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - api-key
+                properties:
+                  api-key:
+                    type: string
+        500:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /authorized:
-  /auth/callback/{provider}:
-  /auth/callback/{provider}:
+    get:
+      description: check if user is authorized
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authorized
+                properties:
+                  authorized:
+                    type: boolean
+        401:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authorized
+                properties:
+                  authorized:
+                    type: boolean
+        500:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /v1/exps:
     get:
@@ -252,16 +298,315 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /v1/benchmark:
+    post:
+      description: create a new benchmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBenchmarkRequest'
+      responses:
+        201:
+          description: benchmark created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateBenchmarkResponse'
+        400:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/benchmark/{id}:
     get:
+      description: get benchmark by id
+      parameters:
+        - name: id
+          in: path
+          description: benchmark id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: retrieved benchmark successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkResponse'
+        404:
+          description: could not find benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not retrieve benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     patch:
+      description: update benchmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBenchmarkRequest'
+
+      parameters:
+        - name: id
+          in: path
+          description: benchmark id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: benchmark updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateBenchmarkResponse'
+        400:
+          description: bad benchmark update request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: could not find benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not update benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     delete:
+      description: delete benchmark
+      parameters:
+        - name: id
+          in: path
+          description: benchmark id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: benchmark deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteBenchmarkResponse'
+        500:
+          description: could not delete benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        501:
+          description: method not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/benchmark/{id}/toggle:
+    put:
+      description: toggle benchmark pause/unpause
+      parameters:
+        - name: id
+          in: path
+          description: benchmark id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: benchmark toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkToggleResponse'
+        400:
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: benchmark not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not toggle benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/benchmark/{id}/runs:
+    get:
+      description: retrieve all benchmark runs
+      parameters:
+        - name: id
+          in: path
+          description: benchmark id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: benchmark runs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRunsResponse'
+        404:
+          description: could not find benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not fetch benchmark runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/benchmark/{id}/best:
+    get:
+      description: retrieve best benchmark runs
+      parameters:
+        - name: id
+          in: path
+          description: benchmark id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BestBenchmarkRequest'
+      responses:
+        200:
+          description: best benchmark retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BestBenchmarkResponse'
+        400:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
 components:
   schemas:
+    CreateBenchmarkRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the benchmark
+        eagerStart:
+          type: boolean
+          description: Whether to start immediately
+        autoTag:
+          type: boolean
+          description: Automatically tag the benchmark
+        tag:
+          type: string
+          description: Custom tag (if autoTag is true)
+        decisionMetric:
+          type: string
+          description: Metric used for decision making
+        registries:
+          type: array
+          items:
+            type: string
+          description: List of registry names or IDs
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/BenchMetric'
+          description: List of benchmark metrics
+        datasetName:
+          type: string
+          description: Name of the dataset
+        datasetURL:
+          type: string
+          format: uri
+          description: URL to the dataset
+        datasetFromS3:
+          type: boolean
+          description: Whether dataset is stored in S3
+      required:
+        - name
+        - registries
+        - metrics
+        - datasetName
+        - datasetURL
+        - datasetFromS3
+
+    UpdateBenchmarkRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: New name for the benchmark
+        autoTag:
+          type: boolean
+          nullable: true
+          description: Update autotag setting – can be true, false, or null (to clear)
+        tag:
+          type: string
+          description: Update the custom tag
+        decisionMetric:
+          type: string
+          description: Update the decision metric
+
+    BestBenchmarkRequest:
+      description: benchmark metrics
+      type: array
+      items:
+        type: string
+
     ExperimentsResponse:
       type: object
       required:
@@ -281,6 +626,7 @@ components:
           example:
             exp1: ["run#1", "run#2"]
             exp2: ["run#3"]
+
     ExperimentResponse:
       type: object
       required:
@@ -406,6 +752,85 @@ components:
             type: string
           description: array of benchmark ids
 
+    CreateBenchmarkResponse:
+      type: object
+      required:
+        - id
+        - created
+        - details
+      properties:
+        id:
+          type: string
+          description: id of new benchmark
+        created:
+          type: boolean
+          description: true if benchmark was created
+        details:
+          type: string
+
+    BenchmarkResponse:
+      type: object
+      required:
+        - details
+        - benchmark
+      properties:
+        benchmark:
+          $ref: '#/components/schemas/Bench'
+        details:
+          type: string
+
+    UpdateBenchmarkResponse:
+      type: object
+      required:
+        - details
+      properties:
+        details:
+          type: string 
+
+    DeleteBenchmarkResponse:
+      type: object
+      required:
+        - details
+      properties:
+        details:
+          type: string 
+
+    BenchmarkToggleResponse:
+      type: object
+      required:
+        - details
+      properties:
+        details:
+          type: string
+
+    BenchmarkRunsResponse:
+      type: object
+      required:
+        - details
+        - runs
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/BenchRun'
+        details:
+          type: string
+
+    BestBenchmarkResponse:
+      type: object
+      required:
+        - details
+        - runs
+      properties:
+        details:
+          type: string
+        runs:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/BenchRun'
+
     RunInfo:
       type: object
       required:
@@ -475,3 +900,110 @@ components:
       properties:
         createdAt:
           type: string
+
+    Bench:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique benchmark identifier
+          example: "bench-123"
+        name:
+          type: string
+          description: Benchmark name
+          example: "performance-test-01"
+        paused:
+          type: boolean
+          description: Whether the benchmark is paused
+          example: false
+        eagerStart:
+          type: boolean
+          description: Whether to start immediately
+          example: true
+        autoTag:
+          type: boolean
+          description: Automatically assign a tag
+          example: false
+        tag:
+          type: string
+          description: Custom tag (required)
+          example: "nightly-run"
+        decisionMetric:
+          type: string
+          description: Metric used for decision making
+          example: "accuracy"
+        registries:
+          type: array
+          items:
+            type: string
+          description: List of registry names or IDs
+          example: ["registry-a", "registry-b"]
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/BenchMetric'
+          description: List of benchmark metrics
+        datasetName:
+          type: string
+          description: Name of the dataset
+          example: "cifar10"
+        datasetUrl:
+          type: string
+          format: uri
+          description: URL to the dataset (must be a valid URL)
+          example: "https://example.com/datasets/cifar10"
+        fromS3:
+          type: boolean
+          description: Whether the dataset is stored in S3
+          example: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Creation or last update timestamp
+          example: "2025-05-08T12:34:56Z"
+      required:
+        - id
+        - name
+        - tag
+        - registries
+        - metrics
+        - datasetName
+        - datasetUrl
+        - timestamp
+
+    BenchMetric:
+      type: object
+      properties:
+        name:
+          type: string
+        descSort:
+          type: boolean
+      required:
+        - name
+
+    BenchRun:
+      type: object
+      properties:
+        registry:
+          type: string
+          description: Registry name or identifier
+          example: "registry-main"
+        version:
+          type: integer
+          format: int64
+          description: Version number
+          example: 42
+        metrics:
+          type: object
+          description: Map of metric names to float32 values
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            accuracy: 0.95
+            loss: 0.23
+        timestamp:
+          type: string
+          format: date-time
+          description: Run timestamp
+          example: "2025-05-08T14:30:00Z"

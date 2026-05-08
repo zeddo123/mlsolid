@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -30,8 +31,12 @@ func benchmark(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	bench, err := ctrl.Benchmark(c.Context(), id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	if errors.Is(err, types.ErrNotFound) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err,
+		})
+	} else if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err,
 		})
 	}
@@ -66,13 +71,15 @@ func createBenchmark(c *fiber.Ctx) error {
 		FromS3:         request.DatasetFromS3,
 		Timestamp:      time.Now(),
 	})
-	if !created {
+	if errors.Is(err, types.ErrBadRequest) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err,
 		})
-	}
-
-	if err != nil {
+	} else if errors.Is(err, types.ErrNotFound) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err,
+		})
+	} else if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err,
 		})
@@ -80,11 +87,12 @@ func createBenchmark(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"id":      id,
+		"created": created,
 		"details": "benchmark created",
 	})
 }
 
-func toogleBenchmark(c *fiber.Ctx) error {
+func toggleBenchmark(c *fiber.Ctx) error {
 	ctrl := ctxController(c)
 
 	id := c.Params("id")
@@ -98,8 +106,12 @@ func toogleBenchmark(c *fiber.Ctx) error {
 	}
 
 	err = ctrl.ToggleBenchmark(c.Context(), id, toggle)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	if errors.Is(err, types.ErrNotFound) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err,
+		})
+	} else if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err,
 		})
 	}
@@ -123,8 +135,12 @@ func updateBenchmark(c *fiber.Ctx) error {
 	}
 
 	err := ctrl.UpdateBenchmark(c.Context(), id, updateBenchmark)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	if errors.Is(err, types.ErrNotFound) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err,
+		})
+	} else if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err,
 		})
 	}
@@ -146,8 +162,12 @@ func benchmarkRuns(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	runs, err := ctrl.BenchmarkRuns(c.Context(), id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	if errors.Is(err, types.ErrNotFound) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err,
+		})
+	} else if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err,
 		})
 	}

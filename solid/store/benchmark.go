@@ -35,7 +35,7 @@ func (r *RedisStore) CreateBenchmark(ctx context.Context, b types.Bench) (bool, 
 
 	_, err := p.Exec(ctx)
 	if err != nil {
-		return false, fmt.Errorf("could not set benchmark: %w", err)
+		return false, fmt.Errorf("%w: could not set benchmark: %w", types.ErrInternal, err)
 	}
 
 	err = r.AddBenchmarkRegistries(ctx, b.ID, b.Registries)
@@ -79,7 +79,7 @@ func (r *RedisStore) AddBenchmarkRegistries(ctx context.Context, benchID string,
 
 	_, err := p.Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("could not set benchmark registries: %w", err)
+		return fmt.Errorf("%w: could not set benchmark registries: %w", types.ErrInternal, err)
 	}
 
 	return nil
