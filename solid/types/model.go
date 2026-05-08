@@ -26,7 +26,7 @@ type ModelRegistry struct {
 // NewModelRegistry creates a new registry.
 func NewModelRegistry(name string) *ModelRegistry {
 	return &ModelRegistry{ //nolint: exhaustruct
-		Name:      name,
+		Name:      SanitizeName(name),
 		Models:    make([]ModelEntry, 0),
 		Tags:      make(map[string][]int),
 		Timestamp: time.Now(),

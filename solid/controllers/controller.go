@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"context"
-	"log"
 
+	"github.com/rs/zerolog"
 	"github.com/zeddo123/mlsolid/solid/s3"
 	"github.com/zeddo123/mlsolid/solid/store"
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -12,41 +12,49 @@ import (
 
 // Controller defines methods to interact with mlsolid.
 type Controller struct {
-	Redis store.RedisStore
-	S3    s3.ObjectStore
-	Bus   *pubgo.Bus
+	Redis              store.RedisStore
+	S3                 s3.ObjectStore
+	Bus                *pubgo.Bus
+	Logger             zerolog.Logger
+	PublishBenchEvents bool
 }
 
 func (c *Controller) pushBengineEvent(ctx context.Context, registryName string, version int) {
 	registry, err := c.Redis.ModelRegistry(ctx, registryName)
 	if err != nil {
-		log.Println("could not pull registry from db", err)
+		c.Logger.Error().Err(err).Msg("could not pull registry from db")
 
 		return
 	}
 
 	modelEntry, err := registry.ModelByVersion(version)
 	if err != nil {
-		log.Println("could not find model entry", err)
+		c.Logger.Error().Err(err).Msg("could not find model entry")
 
 		return
 	}
 
 	benchmarks, err := c.Redis.RegistryBenchmarks(ctx, registryName)
 	if err != nil {
-		log.Println("could not pull registry benchmarks", err)
+		c.Logger.Error().Err(err).Msg("could not pull registry benchmarks")
 
 		return
 	}
 
 	benchs, err := c.Redis.BenchmarksWithId(ctx, benchmarks)
 	if err != nil {
-		log.Println("could not pull benchmarks", err)
+		c.Logger.Error().Err(err).Msg("could not pull benchmarks")
 
 		return
 	}
 
 	for _, bench := range benchs {
+		c.Logger.Info().
+			Str("registry", registryName).
+			Int("version", version).
+			Str("benchID", bench.ID).
+			Msg("publishing benchmark event")
+
 		err = c.Bus.Publish("bengine", types.BenchEvent{
 			BenchID:     bench.ID,
 			BenchName:   bench.Name,
@@ -61,7 +69,10 @@ func (c *Controller) pushBengineEvent(ctx context.Context, registryName string, 
 			Tag:         bench.Tag,
 		})
 		if err != nil {
-			log.Println("could not publish benchmark event", bench.ID)
+			c.Logger.Error().
+				Err(err).
+				Str("benchID", bench.ID).
+				Msg("could not publish benchmark event")
 
 			continue
 		}

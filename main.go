@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
 	"github.com/zeddo123/mlsolid/solid"
 	"github.com/zeddo123/mlsolid/solid/api"
 	"github.com/zeddo123/mlsolid/solid/bengine"
 	"github.com/zeddo123/mlsolid/solid/controllers"
 	"github.com/zeddo123/mlsolid/solid/grpcservice"
+	"github.com/zeddo123/mlsolid/solid/logger"
 	"github.com/zeddo123/mlsolid/solid/oauth"
 	"github.com/zeddo123/mlsolid/solid/s3"
 	"github.com/zeddo123/mlsolid/solid/store"
@@ -22,13 +23,23 @@ const (
 	BusSubsCap        = 2
 )
 
+var log zerolog.Logger //nolint: gochecknoglobals
+
 func main() {
 	config, err := solid.LoadConfig(".")
 	if err != nil {
 		panic(err)
 	}
 
-	log.Println("[MLSOLID] Configuration has been loaded")
+	log = logger.New(!config.Prod)
+
+	log.Info().
+		Str("APIPort", config.APIPort).
+		Str("gRPCPort", config.GrpcPort).
+		Bool("prod", config.Prod).
+		Bool("api_access", config.APIKeyAccess).
+		Bool("bEngine", config.EnableBEngine).
+		Msg("configuration loaded successfully")
 
 	bus := pubgo.NewBus(pubgo.BusOps{
 		InitialTopicsCap: BusTopicsCap,
@@ -61,10 +72,14 @@ func main() {
 
 	store := store.RedisStore{Client: *redisClient}
 	controller := controllers.Controller{
-		Redis: store,
-		S3:    objectStore,
-		Bus:   bus,
+		Redis:              store,
+		S3:                 objectStore,
+		Bus:                bus,
+		Logger:             logger.NewSub(log, "controller"),
+		PublishBenchEvents: config.EnableBEngine,
 	}
+
+	log.Info().Msg("starting servers")
 
 	if config.EnableBEngine {
 		sub := bus.Subscribe("bengine", pubgo.WithBufferSize(BengineBufferSize))

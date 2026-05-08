@@ -15,13 +15,14 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
+// CreateModelRegistry creates and saved a new model registry to the store.
 func (r *RedisStore) CreateModelRegistry(ctx context.Context, m types.ModelRegistry) error {
 	fn := func(tx *redis.Tx) error {
 		_, err := tx.Pipelined(ctx, func(p redis.Pipeliner) error {
 			return r.createModelRegistry(ctx, p, m)
 		})
 
-		return err
+		return fmt.Errorf("transaction failed: %w", err)
 	}
 
 	return r.runTx(ctx, fn, transactionMaxTries, r.makeModelRegistryInfoKey(m.Name))
@@ -67,6 +68,7 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 	return nil
 }
 
+// ModelRegistry pulls a saved model registry from the store.
 func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.ModelRegistry, error) { //nolint: cyclop
 	if err := r.ModelRegistryExists(ctx, name); err != nil {
 		return nil, err
@@ -273,13 +275,14 @@ func (r *RedisStore) AddModel(ctx context.Context, name string, m types.ModelEnt
 	return nil
 }
 
+// UpdateModelRegistry updates the model registry in the store.
 func (r *RedisStore) UpdateModelRegistry(ctx context.Context, m types.ModelRegistry) error {
 	fn := func(tx *redis.Tx) error {
 		_, err := tx.Pipelined(ctx, func(p redis.Pipeliner) error {
 			return r.updateModelRegistry(ctx, p, m)
 		})
 
-		return err
+		return fmt.Errorf("pipeline failed: %w", err)
 	}
 
 	return r.runTx(ctx, fn, transactionMaxTries, r.makeModelRegistryInfoKey(m.Name),
