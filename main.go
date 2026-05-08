@@ -1,3 +1,4 @@
+// Package main is the entrypoint for running the service.
 package main
 
 import (
@@ -70,7 +71,10 @@ func main() {
 		panic(err)
 	}
 
-	store := store.RedisStore{Client: *redisClient}
+	store := store.RedisStore{
+		Client: *redisClient,
+		Logger: logger.NewSub(log, "store"),
+	}
 	controller := controllers.Controller{
 		Redis:              store,
 		S3:                 objectStore,

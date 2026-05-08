@@ -290,13 +290,23 @@ func (r *RedisStore) BenchmarkRuns(ctx context.Context, benchID string) ([]*type
 	for i, cmd := range cmds {
 		m, err := cmd.Result()
 		if err != nil {
-			// TODO: log error
+			r.Logger.Error().
+				Err(err).
+				Str("benchID", benchID).
+				Str("benchRun", runKeys[i]).
+				Msg("failed fetching benchmark run")
+
 			continue
 		}
 
-		run, err := parseBenchRun(m)
+		run, err := r.parseBenchRun(m)
 		if err != nil {
-			// TODO: log error
+			r.Logger.Error().
+				Err(err).
+				Str("benchID", benchID).
+				Str("benchRun", runKeys[i]).
+				Msg("could not parse benchmark run")
+
 			continue
 		}
 
@@ -316,8 +326,8 @@ func (r *RedisStore) Benchmarks(ctx context.Context) ([]string, error) {
 	return benchs, nil
 }
 
-// BenchmarksWithId returns all benchmarks with specified ids without checking if they exist in the store.
-func (r *RedisStore) BenchmarksWithId(ctx context.Context, ids []string) ([]*types.Bench, error) {
+// BenchmarksWithIDs returns all benchmarks with specified ids without checking if they exist in the store.
+func (r *RedisStore) BenchmarksWithIDs(ctx context.Context, ids []string) ([]*types.Bench, error) {
 	type tempResult struct {
 		data       *redis.MapStringStringCmd
 		metrics    *redis.MapStringStringCmd
@@ -462,7 +472,7 @@ func parseBenchmarkMetrics(metrics *redis.MapStringStringCmd) ([]types.BenchMetr
 	return benchMetrics, nil
 }
 
-func parseBenchRun(m map[string]string) (*types.BenchRun, error) {
+func (r *RedisStore) parseBenchRun(m map[string]string) (*types.BenchRun, error) {
 	reg := m["Registry"]
 
 	v, err := strconv.ParseInt(m["Version"], 10, 64)
@@ -484,7 +494,12 @@ func parseBenchRun(m map[string]string) (*types.BenchRun, error) {
 	for k, v := range m {
 		metric, err := strconv.ParseFloat(v, 32)
 		if err != nil {
-			// TODO: log error
+			r.Logger.Error().
+				Err(err).
+				Str("metric", k).
+				Str("value", v).
+				Msg("parsing benchmark run: could not parse version number to float")
+
 			continue
 		}
 

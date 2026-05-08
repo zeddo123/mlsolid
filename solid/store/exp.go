@@ -9,6 +9,7 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
+// Exp returns an experiment by its id.
 func (r *RedisStore) Exp(ctx context.Context, expID string) (*types.Experiment, error) {
 	if err := r.ExpExists(ctx, expID); err != nil {
 		return nil, err
@@ -30,6 +31,7 @@ func (r *RedisStore) Exp(ctx context.Context, expID string) (*types.Experiment, 
 	}, nil
 }
 
+// ExpRunIDs returns run ids of an experiment.
 func (r *RedisStore) ExpRunIDs(ctx context.Context, expID string) ([]string, error) {
 	p := r.Client.Pipeline()
 
@@ -52,6 +54,7 @@ func (r *RedisStore) expRunIDs(ctx context.Context, p redis.Pipeliner, expID str
 	return p.SMembers(ctx, r.makeExpKey(expID))
 }
 
+// ExpExists returns whether experiment exists.
 func (r *RedisStore) ExpExists(ctx context.Context, expID string) error {
 	c, err := r.Client.Exists(ctx, r.makeExpKey(expID)).Result()
 	if err != nil {
@@ -59,12 +62,13 @@ func (r *RedisStore) ExpExists(ctx context.Context, expID string) error {
 	}
 
 	if c == 0 {
-		return types.NewNotFoundErr("could not find experiment")
+		return types.NewNotFoundErr("could not find experiment") //nolint: wrapcheck
 	}
 
 	return nil
 }
 
+// Exps returns all known experiment ids.
 func (r *RedisStore) Exps(ctx context.Context) ([]string, error) {
 	keys, err := r.scanKeys(ctx, "exp:*")
 	if err != nil {
