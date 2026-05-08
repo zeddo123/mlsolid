@@ -7,9 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
-	"os"
 	"strings"
 	"time"
 
@@ -31,22 +29,24 @@ type Service struct {
 	mlsolidv1grpc.UnimplementedMlsolidServiceServer
 
 	Controller *controllers.Controller
+	Logger     zerolog.Logger
 }
 
 // StartServer starts a grpc server instance.
-func StartServer(port string, ctrl *controllers.Controller, authEnabled bool) {
+func StartServer(port string, ctrl *controllers.Controller, authEnabled bool, logger zerolog.Logger) {
 	l, err := net.Listen("tcp", ":"+port) //nolint: noctx
 	if err != nil {
-		log.Println("could not listen to port", port)
-
-		panic(err)
+		logger.Panic().
+			Err(err).
+			Str("port", port).
+			Msg("could not start listening to port")
 	}
 
 	service := Service{ //nolint: exhaustruct
 		Controller: ctrl,
+		Logger:     logger,
 	}
 
-	logger := zerolog.New(os.Stderr)
 	opts := []logging.Option{
 		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
 	}
@@ -78,7 +78,9 @@ func StartServer(port string, ctrl *controllers.Controller, authEnabled bool) {
 
 	mlsolidv1grpc.RegisterMlsolidServiceServer(server, &service)
 
-	log.Println("gRPC server started at", port)
+	logger.Info().
+		Str("port", port).
+		Msg("gRPC server started")
 
 	if err := server.Serve(l); err != nil {
 		panic(err)
@@ -120,10 +122,6 @@ func (s *Service) Experiments(ctx context.Context,
 func (s *Service) CreateRun(ctx context.Context,
 	req *mlsolidv1.CreateRunRequest,
 ) (*mlsolidv1.CreateRunResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	run := types.NewRun(req.GetRunId(), req.GetExperimentId())
 
 	err := s.Controller.CreateRun(ctx, run)
@@ -135,10 +133,6 @@ func (s *Service) CreateRun(ctx context.Context,
 }
 
 func (s *Service) Run(ctx context.Context, req *mlsolidv1.RunRequest) (*mlsolidv1.RunResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	run, err := s.Controller.Run(ctx, req.GetRunId())
 	if err != nil {
 		return nil, ParseError(err)
@@ -153,10 +147,6 @@ func (s *Service) Run(ctx context.Context, req *mlsolidv1.RunRequest) (*mlsolidv
 }
 
 func (s *Service) Runs(ctx context.Context, req *mlsolidv1.RunsRequest) (*mlsolidv1.RunsResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	runs, err := s.Controller.Runs(ctx, req.GetRunIds())
 	if err != nil {
 		return nil, ParseError(err)
@@ -168,10 +158,6 @@ func (s *Service) Runs(ctx context.Context, req *mlsolidv1.RunsRequest) (*mlsoli
 func (s *Service) AddMetrics(ctx context.Context,
 	req *mlsolidv1.AddMetricsRequest,
 ) (*mlsolidv1.AddMetricsResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	err := s.Controller.AddMetrics(ctx, req.GetRunId(), parseGrpcMetric(req.GetMetrics()))
 	if err != nil {
 		return nil, ParseError(err)
@@ -181,10 +167,6 @@ func (s *Service) AddMetrics(ctx context.Context,
 }
 
 func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.MlsolidService_ArtifactServer) error {
-	if req == nil {
-		return status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	artifact, body, err := s.Controller.Artifact(stream.Context(), req.GetRunId(), req.GetArtifactName())
 	if err != nil {
 		return ParseError(err)
@@ -285,7 +267,7 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 		return ParseError(err)
 	}
 
-	return stream.SendAndClose(&mlsolidv1.AddArtifactResponse{
+	return stream.SendAndClose(&mlsolidv1.AddArtifactResponse{ //nolint: exhaustruct
 		Name:   artifactName,
 		Status: mlsolidv1.Status_STATUS_SUCCESS,
 		Size:   uint64(buf.Len()), //nolint: gosec
@@ -295,10 +277,6 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 func (s *Service) CreateModelRegistry(ctx context.Context,
 	req *mlsolidv1.CreateModelRegistryRequest,
 ) (*mlsolidv1.CreateModelRegistryResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	err := s.Controller.CreateModelRegistry(ctx, req.GetName())
 	if err != nil {
 		return nil, ParseError(err)
@@ -310,10 +288,6 @@ func (s *Service) CreateModelRegistry(ctx context.Context,
 func (s *Service) ModelRegistry(ctx context.Context,
 	req *mlsolidv1.ModelRegistryRequest,
 ) (*mlsolidv1.ModelRegistryResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	registry, err := s.Controller.ModelRegistry(ctx, req.GetName())
 	if err != nil {
 		return nil, ParseError(err)
@@ -325,14 +299,12 @@ func (s *Service) ModelRegistry(ctx context.Context,
 func (s *Service) AddModelEntry(ctx context.Context,
 	req *mlsolidv1.AddModelEntryRequest,
 ) (*mlsolidv1.AddModelEntryResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	err := s.Controller.AddArtifactToRegistry(ctx,
 		req.GetName(), req.GetRunId(), req.GetArtifactId(), req.GetTags()...)
 	if err != nil {
-		log.Println(err)
+		s.Logger.Error().
+			Err(err).
+			Msg("could not add artifact to registry")
 
 		return nil, ParseError(err)
 	}
@@ -343,10 +315,6 @@ func (s *Service) AddModelEntry(ctx context.Context,
 func (s *Service) TaggedModel(ctx context.Context, req *mlsolidv1.TaggedModelRequest) (*mlsolidv1.TaggedModelResponse,
 	error,
 ) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	entry, err := s.Controller.TaggedModel(ctx, req.GetName(), req.GetTag())
 	if err != nil {
 		return nil, ParseError(err)
@@ -363,10 +331,6 @@ func (s *Service) TaggedModel(ctx context.Context, req *mlsolidv1.TaggedModelReq
 func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 	stream mlsolidv1grpc.MlsolidService_StreamTaggedModelServer,
 ) error {
-	if req == nil {
-		return status.Error(codes.InvalidArgument, "req cannot be <nil>")
-	}
-
 	entry, err := s.Controller.TaggedModel(stream.Context(), req.GetName(), req.GetTag())
 	if err != nil {
 		return ParseError(err)
@@ -477,7 +441,7 @@ func (s *Service) Benchmark(ctx context.Context,
 
 // CreateBenchmark grpc method to create a new benchmark.
 func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenchmarkRequest) (*mlsolidv1.CreateBenchmarkResponse, error) {
-	id, created, err := s.Controller.CreateBenchmark(ctx, types.Bench{
+	id, created, err := s.Controller.CreateBenchmark(ctx, types.Bench{ //nolint: exhaustruct
 		Timestamp:      time.Now(),
 		Paused:         false,
 		Name:           req.GetName(),
@@ -502,7 +466,9 @@ func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenc
 }
 
 // ToggleBenchmark toogles a benchmark's pause state.
-func (s *Service) ToggleBenchmark(ctx context.Context, req *mlsolidv1.ToggleBenchmarkRequest) (*mlsolidv1.ToggleBenchmarkResponse, error) {
+func (s *Service) ToggleBenchmark(ctx context.Context,
+	req *mlsolidv1.ToggleBenchmarkRequest,
+) (*mlsolidv1.ToggleBenchmarkResponse, error) {
 	err := s.Controller.ToggleBenchmark(ctx, req.GetBenchmarkId(), req.GetPaused())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -512,7 +478,9 @@ func (s *Service) ToggleBenchmark(ctx context.Context, req *mlsolidv1.ToggleBenc
 }
 
 // UpdateBenchmark updates an existent benchmark.
-func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenchmarkRequest) (*mlsolidv1.UpdateBenchmarkResponse, error) {
+func (s *Service) UpdateBenchmark(ctx context.Context,
+	req *mlsolidv1.UpdateBenchmarkRequest,
+) (*mlsolidv1.UpdateBenchmarkResponse, error) {
 	err := s.Controller.UpdateBenchmark(ctx, req.GetBenchmarkId(), types.UpdateBench{
 		Name:           req.GetName(),
 		AutoTag:        req.AutoTag,
@@ -567,7 +535,9 @@ func (s *Service) UpdateBenchmark(ctx context.Context, req *mlsolidv1.UpdateBenc
 }
 
 // DeleteBenchmark rpc method.
-func (s *Service) DeleteBenchmark(_ context.Context, _ *mlsolidv1.DeleteBenchmarkRequest) (*mlsolidv1.DeleteBenchmarkResponse, error) {
+func (s *Service) DeleteBenchmark(_ context.Context,
+	_ *mlsolidv1.DeleteBenchmarkRequest,
+) (*mlsolidv1.DeleteBenchmarkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "DeleteBenchmark is not implemented")
 }
 
