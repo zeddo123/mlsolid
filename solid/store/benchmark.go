@@ -310,7 +310,7 @@ func (r *RedisStore) BenchmarkRuns(ctx context.Context, benchID string) ([]*type
 func (r *RedisStore) Benchmarks(ctx context.Context) ([]string, error) {
 	benchs, err := r.Client.SMembers(ctx, BenchmarksKey).Result()
 	if err != nil {
-		return nil, fmt.Errorf("could not pull benchmarks: %w", err)
+		return nil, fmt.Errorf("%w: could not pull benchmarks: %w", types.ErrInternal, err)
 	}
 
 	return benchs, nil

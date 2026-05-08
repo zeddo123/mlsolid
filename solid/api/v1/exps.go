@@ -10,8 +10,8 @@ func experiments(ctx *fiber.Ctx) error {
 
 	exps, err := ctrl.Exps(ctx.Context())
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"details": "could not find exps",
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "could not retrieve experiments",
 		})
 	}
 
@@ -42,8 +42,14 @@ func experiment(ctx *fiber.Ctx) error {
 
 	runs, err := ctrl.ExpRuns(ctx.Context(), expID)
 	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if len(runs) == 0 {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"details": err.Error(),
+			"error": "not runs found for this experiment",
 		})
 	}
 

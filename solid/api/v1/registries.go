@@ -1,7 +1,10 @@
 package v1
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/zeddo123/mlsolid/solid/types"
 )
 
 func registries(ctx *fiber.Ctx) error {
@@ -25,8 +28,12 @@ func registry(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
 	reg, err := ctrl.ModelRegistry(ctx.Context(), id)
-	if err != nil {
+	if errors.Is(err, types.ErrNotFound) {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err,
+		})
+	} else if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err,
 		})
 	}

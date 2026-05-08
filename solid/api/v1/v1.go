@@ -26,7 +26,7 @@ func BuildRoutes(f *fiber.App, middlewares ...fiber.Handler) error {
 	v1.Get("/exp/:id/metric/:mid", metric)
 
 	v1.Get("/exp/:id/artifacts", artifacts)
-	v1.Get("artifact/:rid/:aid", artifact)
+	v1.Get("/artifact/:rid/:aid", artifact)
 
 	v1.Get("/registries", registries)
 	v1.Get("/registry/:id", registry)

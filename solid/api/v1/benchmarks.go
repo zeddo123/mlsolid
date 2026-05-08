@@ -13,7 +13,7 @@ func benchmarks(c *fiber.Ctx) error {
 
 	benchmarks, err := ctrl.Benchmarks(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err,
 		})
 	}
