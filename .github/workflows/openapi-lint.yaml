@@ -1,22 +1,25 @@
-name: openapi-lint
+name: Lint OpenAPI Spec
+
 on:
   push:
-    branches:
-      - main
+    paths:
+      - '*.yaml'
+      - '*.yml'
+      - 'openapi/**'
   pull_request:
-
-permissions:
-  contents: read
-  # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  # pull-requests: read
+    paths:
+      - '*.yaml'
+      - '*.yml'
+      - 'openapi/**'
 
 jobs:
-  openapi:
-    name: lint openapi spec
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: OpenAPI Lint Checks
-        uses: nwestfall/openapi-action@v1.0.2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint OpenAPI specification
+        uses: stoplightio/spectral-action@v0.8.3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./openapi-spec.yaml
+          file_path: ./openapi-spec.yaml
