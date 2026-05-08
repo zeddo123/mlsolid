@@ -134,7 +134,7 @@ func New(sub *pubgo.Subscription, opts ...Opts) *Engine {
 
 	logger := zerolog.New(output).
 		Level(cfg.LoggingLevel).With().
-		Str("Layer", "bENGINE").
+		Str("component", "bENGINE").
 		Timestamp().Logger()
 
 	return &Engine{
