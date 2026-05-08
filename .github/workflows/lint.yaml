@@ -11,6 +11,16 @@ permissions:
   # pull-requests: read
 
 jobs:
+  openapi:
+    name: lint openapi spec
+    runs-on: ubuntu-latest
+    steps:
+      - name: OpenAPI Lint Checks
+        uses: nwestfall/openapi-action@v1.0.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          file: openapi-spec.yaml
+
   golangci:
     name: lint
     runs-on: ubuntu-latest
