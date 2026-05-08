@@ -41,7 +41,7 @@ func (c *Controller) pushBengineEvent(ctx context.Context, registryName string, 
 		return
 	}
 
-	benchs, err := c.Redis.BenchmarksWithId(ctx, benchmarks)
+	benchs, err := c.Redis.BenchmarksWithIDs(ctx, benchmarks)
 	if err != nil {
 		c.Logger.Error().Err(err).Msg("could not pull benchmarks")
 

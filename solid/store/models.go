@@ -119,7 +119,12 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 
 	t, err := time.Parse(time.RFC3339, info["Timestamp"])
 	if err != nil {
-		// TODO: log error
+		r.Logger.Error().
+			Err(err).
+			Str("Timestamp", info["Timestamp"]).
+			Str("registry", name).
+			Msg("failed parsing model registry timestamp")
+
 		t = time.Now()
 	}
 
@@ -169,6 +174,7 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 	return registry, nil
 }
 
+// LastModel returns the last model entry of a registry.
 func (r *RedisStore) LastModel(ctx context.Context, name string) (types.ModelEntry, error) {
 	entries, err := r.Client.LRange(ctx, r.makeModelRegistryKey(name), 0, 0).Result()
 	if err != nil {
@@ -176,7 +182,7 @@ func (r *RedisStore) LastModel(ctx context.Context, name string) (types.ModelEnt
 	}
 
 	if len(entries) < 1 {
-		return types.ModelEntry{}, types.NewNotFoundErr("could not find model registry entry")
+		return types.ModelEntry{}, types.NewNotFoundErr("could not find model registry entry") //nolint: wrapcheck
 	}
 
 	var entry types.ModelEntry
@@ -189,6 +195,7 @@ func (r *RedisStore) LastModel(ctx context.Context, name string) (types.ModelEnt
 	return entry, nil
 }
 
+// ModelByVersion returns the model entry of a registry by its version number.
 func (r *RedisStore) ModelByVersion(ctx context.Context, name string, version int) (types.ModelEntry, error) {
 	entries, err := r.Client.LRange(ctx, r.makeModelRegistryKey(name), int64(version)-1, int64(version)-1).Result()
 	if err != nil {
@@ -196,7 +203,7 @@ func (r *RedisStore) ModelByVersion(ctx context.Context, name string, version in
 	}
 
 	if len(entries) < 1 {
-		return types.ModelEntry{}, types.NewNotFoundErr("could not find model registry entry")
+		return types.ModelEntry{}, types.NewNotFoundErr("could not find model registry entry") //nolint: wrapcheck
 	}
 
 	var entry types.ModelEntry
@@ -209,6 +216,7 @@ func (r *RedisStore) ModelByVersion(ctx context.Context, name string, version in
 	return entry, nil
 }
 
+// ModelByTag returns the model entry of a registry by its tag.
 func (r *RedisStore) ModelByTag(ctx context.Context, name string, tag string) (types.ModelEntry, error) {
 	idxs, err := r.Client.LRange(ctx, r.makeModelRegistryTagKey(name, tag), 0, 0).Result()
 	if err != nil {
@@ -216,7 +224,7 @@ func (r *RedisStore) ModelByTag(ctx context.Context, name string, tag string) (t
 	}
 
 	if len(idxs) < 1 {
-		return types.ModelEntry{}, types.NewNotFoundErr("could not find model registry entry")
+		return types.ModelEntry{}, types.NewNotFoundErr("could not find model registry entry") //nolint: wrapcheck
 	}
 
 	idx, err := strconv.Atoi(idxs[0])
@@ -235,12 +243,13 @@ func (r *RedisStore) ModelRegistryExists(ctx context.Context, name string) error
 	}
 
 	if c != 1 {
-		return types.NewNotFoundErr("could not find model registry")
+		return types.NewNotFoundErr("could not find model registry") //nolint: wrapcheck
 	}
 
 	return nil
 }
 
+// AddModel adds a new model entry to a registry with the specified tags.
 func (r *RedisStore) AddModel(ctx context.Context, name string, m types.ModelEntry, tags ...string) error {
 	if err := r.ModelRegistryExists(ctx, name); err != nil {
 		return err
@@ -300,7 +309,7 @@ func (r *RedisStore) updateModelRegistry(ctx context.Context, p redis.Pipeliner,
 	// Setting model entries under key "registry:<name>"
 	entries, err := m.MarshalEntries()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed marshling entries: %w", err)
 	}
 
 	// TODO: delete any previous tags that were deleted
@@ -373,7 +382,10 @@ func (r *RedisStore) ModelRegistries(ctx context.Context) ([]*types.ModelRegistr
 		wg.Go(func() {
 			reg, err := r.ModelRegistry(ctx, id)
 			if err != nil {
-				fmt.Println("could not find model registry", id)
+				r.Logger.Error().
+					Err(err).
+					Str("registry", id).
+					Msg("could not find model registry")
 
 				return
 			}

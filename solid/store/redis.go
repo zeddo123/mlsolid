@@ -1,3 +1,4 @@
+// Package store implements the persistence layer with redis.
 package store
 
 import (
@@ -6,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
@@ -61,16 +63,16 @@ const (
 	// form: index:registry:<registry-name>:benchs
 	ModelRegistryBenchmarksIndexPattern = "index:registry:%s:benchs"
 
-	// BenchmarksKey.
+	// BenchmarksKey is an index to get all benchmarks present.
 	BenchmarksKey = "index:benchs"
 
-	// BenchmarkKeyPattern.
+	// BenchmarkKeyPattern represents the key for a benchmark.
 	BenchmarkKeyPattern = "bench:%s"
 
-	// BenchmarkMetricsKeyPattern.
+	// BenchmarkMetricsKeyPattern represents all metrics linked to a benchmark.
 	BenchmarkMetricsKeyPattern = "bench:%s:metrics"
 
-	// BenchmarkRegistriesKeyPattern.
+	// BenchmarkRegistriesKeyPattern represents all registries linked to a benchmark.
 	BenchmarkRegistriesKeyPattern = "bench:%s:registries"
 
 	// BenchmarkRunsKeyPattern index used to pull all benchmark runs
@@ -84,8 +86,10 @@ const (
 	transactionMaxTries = 10
 )
 
+// RedisStore implements the store for mlsolid.
 type RedisStore struct {
 	Client redis.Client
+	Logger zerolog.Logger
 }
 
 func (r *RedisStore) makeAPIKey(key string) string {

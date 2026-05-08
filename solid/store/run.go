@@ -46,6 +46,7 @@ func (r *RedisStore) RunExists(ctx context.Context, runID string) (bool, error) 
 	return c == 1, nil
 }
 
+// Run returns a run from the store by its id.
 func (r *RedisStore) Run(ctx context.Context, id string) (*types.Run, error) {
 	key := r.makeRunKey(id)
 
@@ -85,7 +86,7 @@ func (r *RedisStore) parseRun(ctx context.Context, hashRes *redis.MapStringStrin
 		return nil, types.NewInternalErr("malformed run data")
 	}
 
-	return &types.Run{
+	return &types.Run{ //nolint: exhaustruct
 		Name:         mapping["Name"],
 		Timestamp:    timestamp,
 		ExperimentID: mapping["ExperimentID"],
@@ -94,6 +95,7 @@ func (r *RedisStore) parseRun(ctx context.Context, hashRes *redis.MapStringStrin
 	}, nil
 }
 
+// Runs returns all runs with the specified ids.
 func (r *RedisStore) Runs(ctx context.Context, ids []string) ([]*types.Run, error) {
 	keys, err := r.pullRunMetricKeys(ctx, ids)
 	if err != nil {

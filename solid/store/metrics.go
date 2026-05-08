@@ -2,37 +2,48 @@ package store
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
+// SetMetrics sets the metrics of a run by its id.
 func (r *RedisStore) SetMetrics(ctx context.Context, runID string, ms map[string]types.Metric) error {
 	_, err := r.Client.Pipelined(ctx, func(p redis.Pipeliner) error {
 		r.setMetrics(ctx, p, runID, ms)
 
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("pipeline failed: %w", err)
+	}
 
-	return err
+	return nil
 }
 
+// SetMetric sets the metric for a run.
 func (r *RedisStore) SetMetric(ctx context.Context, runID string, m types.Metric) error {
 	_, err := r.Client.Pipelined(ctx, func(p redis.Pipeliner) error {
 		r.setMetric(ctx, p, runID, m)
 
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("pipeline failed: %w", err)
+	}
 
-	return err
+	return nil
 }
 
+// RunMetrics returns the ids of all metrics of a run.
 func (r *RedisStore) RunMetrics(ctx context.Context, runID string) ([]string, error) {
 	pattern := "metric:*:" + runID
 
 	return r.scanKeys(ctx, pattern)
 }
 
+// Metrics returns all metrics of a run.
 func (r *RedisStore) Metrics(ctx context.Context, runID string) (map[string]types.Metric, error) {
 	keys, err := r.scanKeys(ctx, runID)
 	if err != nil {
@@ -53,7 +64,7 @@ func (r *RedisStore) Metrics(ctx context.Context, runID string) (map[string]type
 
 func (r *RedisStore) setMetrics(ctx context.Context, p redis.Pipeliner,
 	runID string, ms map[string]types.Metric,
-) map[string][]*redis.StringCmd {
+) map[string][]*redis.StringCmd { //nolint: unparam
 	res := make(map[string][]*redis.StringCmd, 0)
 
 	for key, val := range ms {
@@ -71,7 +82,7 @@ func (r *RedisStore) setMetric(ctx context.Context, p redis.Pipeliner,
 	cmds := make([]*redis.StringCmd, len(vals))
 
 	for i, val := range vals {
-		cmds[i] = p.XAdd(ctx, &redis.XAddArgs{
+		cmds[i] = p.XAdd(ctx, &redis.XAddArgs{ //nolint: exhaustruct
 			Stream: key,
 			Values: map[string]any{
 				"Name": m.Name(),
@@ -93,7 +104,9 @@ func (r *RedisStore) metrics(ctx context.Context, p redis.Pipeliner, keys []stri
 	return res
 }
 
-func (r *RedisStore) parseMetric(_ context.Context, res *redis.XMessageSliceCmd) (types.Metric, error) {
+func (r *RedisStore) parseMetric(_ context.Context, //nolint: ireturn
+	res *redis.XMessageSliceCmd,
+) (types.Metric, error) {
 	msgs, err := res.Result()
 	if err != nil {
 		return nil, types.NewInternalErr("could not fetch metric")
@@ -102,18 +115,32 @@ func (r *RedisStore) parseMetric(_ context.Context, res *redis.XMessageSliceCmd)
 	vals := make([]any, len(msgs))
 
 	for i, m := range msgs {
-		vals[i] = types.ParseVal(m.Values["Val"].(string))
+		val, ok := m.Values["Val"].(string)
+		if !ok {
+			r.Logger.Error().Any("values", m.Values).Msg("could not cast value to string")
+
+			continue
+		}
+
+		vals[i] = types.ParseVal(val)
 	}
 
 	var g types.Metric
 
+	name, ok := msgs[0].Values["Name"].(string)
+	if !ok {
+		r.Logger.Error().Any("name", msgs[0].Values["Name"]).Msg("could not cast name to string")
+
+		return g, fmt.Errorf("could not cast metric name to string %v: %w", msgs[0].Values["Name"], types.ErrInternal)
+	}
+
 	switch vals[0].(type) {
 	case int, int64, int32:
-		g = &types.GenericMetric[int64]{Key: msgs[0].Values["Name"].(string)}
+		g = &types.GenericMetric[int64]{Key: name} //nolint: exhaustruct
 	case float32, float64:
-		g = &types.GenericMetric[float64]{Key: msgs[0].Values["Name"].(string)}
+		g = &types.GenericMetric[float64]{Key: name} //nolint: exhaustruct
 	case string:
-		g = &types.GenericMetric[string]{Key: msgs[0].Values["Name"].(string)}
+		g = &types.GenericMetric[string]{Key: name} //nolint: exhaustruct
 	}
 
 	g.SetVals(vals)
