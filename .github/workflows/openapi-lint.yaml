@@ -22,4 +22,4 @@ jobs:
       - name: Lint OpenAPI specification
         uses: stoplightio/spectral-action@v0.8.3
         with:
-          file_path: ./openapi-spec.yaml
+          file: ./openapi-spec.yaml
