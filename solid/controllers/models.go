@@ -8,35 +8,55 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
+// ModelRegistry pulls a model registry.
 func (c *Controller) ModelRegistry(ctx context.Context, name string) (*types.ModelRegistry, error) {
 	registry, err := c.Redis.ModelRegistry(ctx, name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed pulling model registry %q: %w", name, err)
 	}
 
 	return registry, nil
 }
 
+// CreateModelRegistry creates a new model registry with the specified name.
 func (c *Controller) CreateModelRegistry(ctx context.Context, name string) error {
 	if name == "" {
-		return types.NewBadRequest("model registry name cannot be empty")
+		return types.NewBadRequest("model registry name cannot be empty") //nolint: wrapcheck
 	}
 
-	return c.Redis.CreateModelRegistry(ctx, *types.NewModelRegistry(name))
+	err := c.Redis.CreateModelRegistry(ctx, *types.NewModelRegistry(name))
+	if err != nil {
+		return fmt.Errorf("failed creating model registry %q : %w", name, err)
+	}
+
+	return nil
 }
 
+// LastModelEntry returns the last model entry in the model registry.
 func (c *Controller) LastModelEntry(ctx context.Context, registryName string) (types.ModelEntry, error) {
-	return c.Redis.LastModel(ctx, registryName)
+	entry, err := c.Redis.LastModel(ctx, registryName)
+	if err != nil {
+		return types.ModelEntry{}, fmt.Errorf("failed getting last model of %q: %w", registryName, err)
+	}
+
+	return entry, nil
 }
 
+// TaggedModel returns the latest model entry with the specified tag.
 func (c *Controller) TaggedModel(ctx context.Context, registryName string, tag string) (types.ModelEntry, error) {
-	return c.Redis.ModelByTag(ctx, registryName, tag)
+	entry, err := c.Redis.ModelByTag(ctx, registryName, tag)
+	if err != nil {
+		return types.ModelEntry{}, fmt.Errorf("failed getting latest enty with %q model from %q: %w", tag, registryName, err)
+	}
+
+	return entry, nil
 }
 
+// AddModelEntry adds a new model entry to the registry.
 func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url string, tags ...string) error {
 	registry, err := c.Redis.ModelRegistry(ctx, registryName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed retrieving model registry %q: %w", registryName, err)
 	}
 
 	registry.Add(url, tags...)
@@ -46,36 +66,45 @@ func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url
 		return fmt.Errorf("update model registry failed: %w", err)
 	}
 
-	go c.pushBengineEvent(ctx, registryName, registry.LatestVersion())
+	if c.PublishBenchEvents {
+		go c.pushBengineEvent(ctx, registryName, registry.LatestVersion())
+	}
 
 	return nil
 }
 
+// AddArtifactToRegistry adds a model artifact as a new model entry to a registry.
 func (c *Controller) AddArtifactToRegistry(ctx context.Context, registryName string, runID string,
 	artifactID string, tags ...string,
 ) error {
 	artifact, err := c.Redis.Artifact(ctx, runID, artifactID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed pulling artifact: %w", err)
 	}
 
 	return c.AddModelEntry(ctx, registryName, artifact.S3Key, tags...)
 }
 
+// TagModel tags a model entry of a registry with the specified tag.
 func (c *Controller) TagModel(ctx context.Context, registryName string, version int, tags ...string) error {
 	registry, err := c.Redis.ModelRegistry(ctx, registryName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed pulling model registry: %w", err)
 	}
 
 	for _, tag := range tags {
 		err := registry.AddTag(tag, version)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed adding tag %q to version %q: %w", tag, version, err)
 		}
 	}
 
-	return c.Redis.UpdateModelRegistry(ctx, *registry)
+	err = c.Redis.UpdateModelRegistry(ctx, *registry)
+	if err != nil {
+		return fmt.Errorf("failed updating model registry: %w", err)
+	}
+
+	return nil
 }
 
 // ModelRegistriesID retrieves all known model registry ids.

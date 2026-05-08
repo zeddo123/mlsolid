@@ -103,6 +103,7 @@ func (r *RedisStore) Artifacts(ctx context.Context, runID string) (map[string]ty
 	return artifacts, nil
 }
 
+// Artifact pulls a saved artifact from the store.
 func (r *RedisStore) Artifact(ctx context.Context, runID string, id string) (types.SavedArtifact, error) {
 	p := r.Client.Pipeline()
 
@@ -119,7 +120,7 @@ func (r *RedisStore) Artifact(ctx context.Context, runID string, id string) (typ
 	}
 
 	if mapping["Name"] == "" {
-		return types.SavedArtifact{}, types.NewNotFoundErr("could not find artifact")
+		return types.SavedArtifact{}, types.NewNotFoundErr("could not find artifact") //nolint: wrapcheck
 	}
 
 	return types.SavedArtifact{
