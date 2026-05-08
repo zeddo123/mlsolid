@@ -21,8 +21,11 @@ func (r *RedisStore) CreateModelRegistry(ctx context.Context, m types.ModelRegis
 		_, err := tx.Pipelined(ctx, func(p redis.Pipeliner) error {
 			return r.createModelRegistry(ctx, p, m)
 		})
+		if err != nil {
+			return fmt.Errorf("transaction failed: %w", err)
+		}
 
-		return fmt.Errorf("transaction failed: %w", err)
+		return nil
 	}
 
 	return r.runTx(ctx, fn, transactionMaxTries, r.makeModelRegistryInfoKey(m.Name))
@@ -290,8 +293,11 @@ func (r *RedisStore) UpdateModelRegistry(ctx context.Context, m types.ModelRegis
 		_, err := tx.Pipelined(ctx, func(p redis.Pipeliner) error {
 			return r.updateModelRegistry(ctx, p, m)
 		})
+		if err != nil {
+			return fmt.Errorf("pipeline failed: %w", err)
+		}
 
-		return fmt.Errorf("pipeline failed: %w", err)
+		return nil
 	}
 
 	return r.runTx(ctx, fn, transactionMaxTries, r.makeModelRegistryInfoKey(m.Name),
