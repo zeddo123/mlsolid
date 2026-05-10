@@ -208,7 +208,7 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 	eof := false
 
 	for {
-		_, err := body.Read(buffer)
+		n, err := body.Read(buffer)
 		if errors.Is(err, io.EOF) {
 			eof = true
 		} else if err != nil {
@@ -217,7 +217,7 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 
 		err = stream.Send(&mlsolidv1.ArtifactResponse{Request: &mlsolidv1.ArtifactResponse_Content{
 			Content: &mlsolidv1.Content{
-				Content: buffer,
+				Content: buffer[:n],
 			},
 		}})
 		if err != nil {
@@ -396,7 +396,7 @@ func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 	defer body.Close()
 
 	for {
-		_, err := body.Read(buffer)
+		n, err := body.Read(buffer)
 		if errors.Is(err, io.EOF) {
 			break
 		}
@@ -408,7 +408,7 @@ func (s *Service) StreamTaggedModel(req *mlsolidv1.StreamTaggedModelRequest,
 		err = stream.Send(&mlsolidv1.StreamTaggedModelResponse{
 			Response: &mlsolidv1.StreamTaggedModelResponse_Content{
 				Content: &mlsolidv1.Content{
-					Content: buffer,
+					Content: buffer[:n],
 				},
 			},
 		})
