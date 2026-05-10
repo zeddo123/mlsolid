@@ -215,7 +215,7 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 }
 
 func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactServer) error { //nolint: cyclop
-	const MaxBufferSize = 2024
+	const MaxBufferSize = 4024
 
 	buf := bytes.Buffer{}
 
