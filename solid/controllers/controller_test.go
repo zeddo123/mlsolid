@@ -74,7 +74,8 @@ func TestArtifact(t *testing.T) {
 		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
 
 		run := types.NewRun("run_artifact", "artifact_exp")
-		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: bytes.NewReader([]byte{1, 2, 3})}
+		artifactContent := []byte{1, 2, 3}
+		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: bytes.NewReader(artifactContent)}
 
 		// Act
 		err := controller.CreateRun(context.Background(), run)
@@ -89,10 +90,12 @@ func TestArtifact(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, content)
 		assert.NotNil(t, savedArtifact)
+
 		defer content.Close()
 		b, err := io.ReadAll(content)
+
 		require.NoError(t, err)
-		assert.Equal(t, artifact.Checkpoint, b)
+		assert.Equal(t, artifactContent, b)
 		assert.Equal(t, "model_path.pt", savedArtifact.Name)
 		assert.Equal(t, types.ModelContentType, savedArtifact.ContentType)
 		assert.NotZero(t, savedArtifact.S3Key)
