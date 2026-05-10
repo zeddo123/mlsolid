@@ -1,5 +1,7 @@
 package types //nolint: var-naming
 
+import "io"
+
 type ContentType string
 
 const (
@@ -9,18 +11,18 @@ const (
 
 type Artifact interface {
 	Name() string
-	Content() []byte
+	Content() io.Reader
 	ContentType() ContentType
 }
 
 type PlainTextArtifact struct {
 	FileName    string
-	FileContent string
+	FileContent io.Reader
 }
 
 type CheckpointArtifact struct {
 	Model      string
-	Checkpoint []byte
+	Checkpoint io.Reader
 }
 
 type SavedArtifact struct {
@@ -29,7 +31,7 @@ type SavedArtifact struct {
 	S3Key       string
 }
 
-func NewArtifact(name string, contentType string, content []byte) (Artifact, error) {
+func NewArtifact(name string, contentType string, content io.Reader) (Artifact, error) {
 	if !IsValidContentType(contentType) {
 		return nil, NewInvalidInputErr("unknown content type for artifact")
 	}
@@ -38,7 +40,7 @@ func NewArtifact(name string, contentType string, content []byte) (Artifact, err
 	case TextContentType:
 		return PlainTextArtifact{
 			FileName:    name,
-			FileContent: string(content),
+			FileContent: content,
 		}, nil
 
 	case ModelContentType:
@@ -55,8 +57,8 @@ func (p PlainTextArtifact) Name() string {
 	return p.FileName
 }
 
-func (p PlainTextArtifact) Content() []byte {
-	return []byte(p.FileContent)
+func (p PlainTextArtifact) Content() io.Reader {
+	return p.FileContent
 }
 
 func (p PlainTextArtifact) ContentType() ContentType {
@@ -67,7 +69,7 @@ func (c CheckpointArtifact) Name() string {
 	return c.Model
 }
 
-func (c CheckpointArtifact) Content() []byte {
+func (c CheckpointArtifact) Content() io.Reader {
 	return c.Checkpoint
 }
 

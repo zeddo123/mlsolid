@@ -215,6 +215,8 @@ func (s *Service) Artifact(req *mlsolidv1.ArtifactRequest, stream mlsolidv1grpc.
 }
 
 func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactServer) error { //nolint: cyclop
+	const MaxBufferSize = 2024
+
 	buf := bytes.Buffer{}
 
 	var contentType string
@@ -222,6 +224,12 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 	var artifactName string
 
 	var runID string
+
+	fs, err := os.CreateTemp("", "artifact_file")
+	if err != nil {
+		return status.Errorf(codes.Internal, "could not create tmp file")
+	}
+	defer os.Remove(fs.Name())
 
 	for {
 		request, err := stream.Recv()
@@ -254,10 +262,34 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 			if err != nil {
 				return status.Errorf(codes.Internal, "could not write data chunk %v", err)
 			}
+
+			// when buffer hits max buffer size, write to tmp file
+			if buf.Len() >= MaxBufferSize {
+				_, err := fs.Write(buf.Bytes())
+				if err != nil {
+					return status.Errorf(codes.Internal, "could not write to tmp file")
+				}
+
+				buf.Reset()
+			}
 		}
 	}
 
-	artifact, err := types.NewArtifact(artifactName, contentType, buf.Bytes())
+	// Clean remaining bytes in buffer
+	_, err = fs.Write(buf.Bytes())
+	if err != nil {
+		return status.Errorf(codes.Internal, "could not write to tmp file")
+	}
+
+	buf.Reset()
+
+	// prepare file for reading (seek to start)
+	_, err = fs.Seek(0, io.SeekStart)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed reading tmp file")
+	}
+
+	artifact, err := types.NewArtifact(artifactName, contentType, fs)
 	if err != nil {
 		return ParseError(err)
 	}
