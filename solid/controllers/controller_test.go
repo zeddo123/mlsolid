@@ -3,6 +3,7 @@
 package controllers_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -73,7 +74,7 @@ func TestArtifact(t *testing.T) {
 		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
 
 		run := types.NewRun("run_artifact", "artifact_exp")
-		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: []byte{1, 2, 3}}
+		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: bytes.NewReader([]byte{1, 2, 3})}
 
 		// Act
 		err := controller.CreateRun(context.Background(), run)
@@ -120,8 +121,8 @@ func TestModelRegistryFlow(t *testing.T) {
 		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
 
 		run := types.NewRun("run2", "exp2")
-		checkpoint := make([]byte, 1024)
-		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: checkpoint}
+		checkpoint := make([]byte, 3024)
+		artifact := types.CheckpointArtifact{Model: "model_path.pt", Checkpoint: bytes.NewReader(checkpoint)}
 
 		// Act
 		err := controller.CreateRun(t.Context(), run)

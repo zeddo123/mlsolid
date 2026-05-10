@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -86,7 +85,7 @@ func (s Store) UploadArtifacts(ctx context.Context, as []types.Artifact) ([]type
 	for _, a := range as {
 		key := s.GenerateKey(a.Name())
 
-		_, err := s.UploadFile(ctx, key, bytes.NewReader(a.Content()))
+		_, err := s.UploadFile(ctx, key, a.Content())
 		if err != nil {
 			errs = fmt.Errorf("%w | could not upload artifact <%s> : %w", errs, a.Name(), err)
 

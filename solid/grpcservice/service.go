@@ -229,7 +229,9 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 	if err != nil {
 		return status.Errorf(codes.Internal, "could not create tmp file")
 	}
-	defer os.Remove(fs.Name())
+
+	defer fs.Close()           //nolint: errcheck
+	defer os.Remove(fs.Name()) //nolint: errcheck
 
 	for {
 		request, err := stream.Recv()
