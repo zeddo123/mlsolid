@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -73,6 +72,8 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 
 // ModelRegistry pulls a saved model registry from the store.
 func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.ModelRegistry, error) { //nolint: cyclop
+	name = types.SanitizeName(name)
+
 	if err := r.ModelRegistryExists(ctx, name); err != nil {
 		return nil, err
 	}
@@ -133,9 +134,11 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 
 	registry := types.NewModelRegistryWithTime(info["Name"], t)
 
+	registry.Models = make([]types.ModelEntry, len(entries))
+
 	err = registry.SetBenchmarkImage(info["BenchmarkImage"])
 	if err != nil {
-		log.Println("could not set registry benchmark image container", err)
+		r.Logger.Error().Err(err).Msg("could not set registry benchmark image container")
 	}
 
 	for _, e := range entries {
@@ -146,7 +149,7 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 			return nil, types.NewInternalErr(err.Error())
 		}
 
-		registry.Models = append(registry.Models, entry)
+		registry.Models[entry.Version-1] = entry
 	}
 
 	for i, cmd := range cmds {
@@ -322,7 +325,7 @@ func (r *RedisStore) updateModelRegistry(ctx context.Context, p redis.Pipeliner,
 	p.Del(ctx, entriesKey, tagsIndexKey)
 
 	for _, entry := range entries {
-		p.LPush(ctx, entriesKey, entry)
+		p.RPush(ctx, entriesKey, entry)
 	}
 
 	// Setting model tags under key "tag:registry:%s:%s" with
