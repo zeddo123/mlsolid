@@ -291,7 +291,7 @@ func (r *RedisStore) AddModel(ctx context.Context, name string, m types.ModelEnt
 }
 
 // UpdateModelRegistry updates the model registry in the store.
-func (r *RedisStore) UpdateModelRegistry(ctx context.Context, m types.ModelRegistry) error {
+func (r *RedisStore) UpdateModelRegistry(ctx context.Context, m *types.ModelRegistry) error {
 	fn := func(tx *redis.Tx) error {
 		_, err := tx.Pipelined(ctx, func(p redis.Pipeliner) error {
 			return r.updateModelRegistry(ctx, p, m)
@@ -307,7 +307,7 @@ func (r *RedisStore) UpdateModelRegistry(ctx context.Context, m types.ModelRegis
 		r.makeModelRegistryKey(m.Name), r.makeModelRegistryTagsKey(m.Name))
 }
 
-func (r *RedisStore) updateModelRegistry(ctx context.Context, p redis.Pipeliner, m types.ModelRegistry) error {
+func (r *RedisStore) updateModelRegistry(ctx context.Context, p redis.Pipeliner, m *types.ModelRegistry) error {
 	if err := r.ModelRegistryExists(ctx, m.Name); err != nil {
 		return err
 	}

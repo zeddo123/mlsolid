@@ -61,7 +61,7 @@ func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url
 
 	registry.Add(url, tags...)
 
-	err = c.Redis.UpdateModelRegistry(ctx, *registry)
+	err = c.Redis.UpdateModelRegistry(ctx, registry)
 	if err != nil {
 		return fmt.Errorf("update model registry failed: %w", err)
 	}
@@ -77,12 +77,28 @@ func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url
 func (c *Controller) AddArtifactToRegistry(ctx context.Context, registryName string, runID string,
 	artifactID string, tags ...string,
 ) error {
+	registry, err := c.Redis.ModelRegistry(ctx, registryName)
+	if err != nil {
+		return fmt.Errorf("failed retrieving model registry %q: %w", registryName, err)
+	}
+
 	artifact, err := c.Redis.Artifact(ctx, runID, artifactID)
 	if err != nil {
 		return fmt.Errorf("failed pulling artifact: %w", err)
 	}
 
-	return c.AddModelEntry(ctx, registryName, artifact.S3Key, tags...)
+	registry.AddArtifact(runID, artifactID, artifact.S3Key, tags...)
+
+	err = c.Redis.UpdateModelRegistry(ctx, registry)
+	if err != nil {
+		return fmt.Errorf("update registry failed: %w", err)
+	}
+
+	if c.PublishBenchEvents {
+		go c.pushBengineEvent(ctx, registryName, registry.LatestVersion())
+	}
+
+	return nil
 }
 
 // TagModel tags a model entry of a registry with the specified tag.
@@ -99,7 +115,7 @@ func (c *Controller) TagModel(ctx context.Context, registryName string, version 
 		}
 	}
 
-	err = c.Redis.UpdateModelRegistry(ctx, *registry)
+	err = c.Redis.UpdateModelRegistry(ctx, registry)
 	if err != nil {
 		return fmt.Errorf("failed updating model registry: %w", err)
 	}
