@@ -32,6 +32,8 @@ type Registry struct {
 type entryInfo struct {
 	CreatedAt time.Time `json:"createdAt,format:datetime"`
 	Tags      []string  `json:"tags"`
+	Name      string    `json:"name"`
+	Run       string    `json:"run"`
 }
 
 // CreateBenchmarkRequest represents a request to create a new benchmark.

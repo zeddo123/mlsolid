@@ -13,7 +13,7 @@ type ModelEntry struct {
 	Name      string    `json:"name"`
 	Timestamp time.Time `json:"timestamp"`
 	Version   int       `json:"version"`
-	Run       string    `json:"run,omitempty"`
+	Run       string    `json:"run"`
 }
 
 // ModelRegistry holds data related to a registry.
