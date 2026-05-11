@@ -13,7 +13,7 @@ require (
 	github.com/docker/cli v29.4.0+incompatible
 	github.com/docker/go-sdk/container v0.1.0-alpha014
 	github.com/go-playground/validator/v10 v10.30.2
-	github.com/gofiber/fiber/v2 v2.52.12
+	github.com/gofiber/fiber/v2 v2.52.13
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/markbates/goth v1.82.0
