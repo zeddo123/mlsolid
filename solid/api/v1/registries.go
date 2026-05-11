@@ -44,6 +44,8 @@ func registry(ctx *fiber.Ctx) error {
 		infos[v+1] = entryInfo{
 			CreatedAt: entry.Timestamp,
 			Tags:      entry.Tags,
+			Name:      entry.Name,
+			Run:       entry.Run,
 		}
 	}
 
