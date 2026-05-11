@@ -13,6 +13,7 @@ type ModelEntry struct {
 	Name      string    `json:"name"`
 	Timestamp time.Time `json:"timestamp"`
 	Version   int       `json:"version"`
+	Run       string    `json:"run,omitempty"`
 }
 
 // ModelRegistry holds data related to a registry.
@@ -92,7 +93,7 @@ func (m *ModelRegistry) ModelByVersion(version int) (ModelEntry, error) {
 }
 
 // Add registers a model checkpoint with a highest version number.
-// Additional tags can be supplied such (`latest`, `prod`, `dev`).
+// Additional tags can be supplied such as (`latest`, `prod`, `dev`).
 func (m *ModelRegistry) Add(url string, tags ...string) {
 	version := len(m.Models) + 1
 
@@ -105,6 +106,27 @@ func (m *ModelRegistry) Add(url string, tags ...string) {
 		Tags:      append(tags, m.VersionTag(version)),
 		Timestamp: time.Now(),
 		Version:   version,
+	}
+
+	m.pushEntry(e)
+}
+
+// AddArtifact adds a new model entry from a run and assigns it a new version number.
+// Additional tags can be supplied such as (`latest`, `prod`, `dev`).
+func (m *ModelRegistry) AddArtifact(run, artifactName string, url string, tags ...string) {
+	version := len(m.Models) + 1
+
+	for _, tag := range tags {
+		m.addTag(tag, version)
+	}
+
+	e := ModelEntry{
+		URL:       url,
+		Tags:      append(tags, m.VersionTag(version)),
+		Timestamp: time.Now(),
+		Version:   version,
+		Name:      artifactName,
+		Run:       run,
 	}
 
 	m.pushEntry(e)

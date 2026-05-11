@@ -151,6 +151,13 @@ func TestModelRegistryFlow(t *testing.T) {
 		t.Log(ids)
 		require.NoError(t, err)
 		assert.Contains(t, ids, "exp2-registry")
+
+		registry, err := controller.ModelRegistry(t.Context(), "exp2-registry")
+		require.NoError(t, err)
+		t.Log(registry.LastModel())
+		assert.Equal(t, "run2", registry.LastModel().Run)
+		assert.Equal(t, "model_path.pt", registry.LastModel().Name)
+		assert.Equal(t, 1, registry.LastModel().Version)
 	})
 }
 
