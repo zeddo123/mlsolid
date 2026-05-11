@@ -12,6 +12,7 @@ type ModelEntry struct {
 	Tags      []string  `json:"tags"`
 	Name      string    `json:"name"`
 	Timestamp time.Time `json:"timestamp"`
+	Version   int       `json:"version"`
 }
 
 // ModelRegistry holds data related to a registry.
@@ -103,6 +104,7 @@ func (m *ModelRegistry) Add(url string, tags ...string) {
 		URL:       url,
 		Tags:      append(tags, m.VersionTag(version)),
 		Timestamp: time.Now(),
+		Version:   version,
 	}
 
 	m.pushEntry(e)

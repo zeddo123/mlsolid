@@ -475,7 +475,9 @@ func (s *Service) Benchmark(ctx context.Context,
 }
 
 // CreateBenchmark grpc method to create a new benchmark.
-func (s *Service) CreateBenchmark(ctx context.Context, req *mlsolidv1.CreateBenchmarkRequest) (*mlsolidv1.CreateBenchmarkResponse, error) {
+func (s *Service) CreateBenchmark(ctx context.Context,
+	req *mlsolidv1.CreateBenchmarkRequest,
+) (*mlsolidv1.CreateBenchmarkResponse, error) {
 	id, created, err := s.Controller.CreateBenchmark(ctx, types.Bench{ //nolint: exhaustruct
 		Timestamp:      time.Now(),
 		Paused:         false,

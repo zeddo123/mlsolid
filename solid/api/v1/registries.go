@@ -43,6 +43,7 @@ func registry(ctx *fiber.Ctx) error {
 	for v, entry := range reg.Models {
 		infos[v+1] = entryInfo{
 			CreatedAt: entry.Timestamp,
+			Tags:      entry.Tags,
 		}
 	}
 
