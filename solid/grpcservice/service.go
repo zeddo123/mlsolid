@@ -258,7 +258,7 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 		case *mlsolidv1.AddArtifactRequest_Content:
 			content, ok := request.GetRequest().(*mlsolidv1.AddArtifactRequest_Content)
 			if !ok {
-				break
+				return status.Errorf(codes.InvalidArgument, "could not read artifact request content")
 			}
 
 			_, err = buf.Write(content.Content.GetContent())
