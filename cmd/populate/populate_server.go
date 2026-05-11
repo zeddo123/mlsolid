@@ -20,7 +20,7 @@ func main() {
 
 	cmd := cli.Command{ //nolint: exhaustruct
 		Name:  "populate",
-		Usage: "populate a mlsolid service with test data",
+		Usage: "populates an mlsolid service with test data",
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint: exhaustruct
 				Name:        "url",
