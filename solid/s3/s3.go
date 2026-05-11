@@ -83,11 +83,14 @@ func (s Store) UploadArtifacts(ctx context.Context, as []types.Artifact) ([]type
 	var errs error
 
 	for _, a := range as {
-		key := s.GenerateKey(a.Name())
-
-		_, err := s.UploadFile(ctx, key, a.Content())
+		key, err := s.GenerateKey(a.Name())
 		if err != nil {
-			errs = fmt.Errorf("%w | could not upload artifact <%s> : %w", errs, a.Name(), err)
+			return nil, fmt.Errorf("could not upload <%s>: %w", a.Name(), err)
+		}
+
+		_, err = s.UploadFile(ctx, key, a.Content())
+		if err != nil {
+			errs = fmt.Errorf("%w: could not upload artifact <%s> : %w", errs, a.Name(), err)
 
 			continue
 		}
@@ -136,13 +139,13 @@ func (s Store) DownloadFile(ctx context.Context, key string) (io.ReadCloser, err
 	return obj.Body, nil
 }
 
-func (s *Store) GenerateKey(name string) string {
+func (s *Store) GenerateKey(name string) (string, error) {
 	r, err := generateID(IDByteSize)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed generating ID: %w", err)
 	}
 
-	return fmt.Sprintf("%s/%s-%s", s.Prefix, r, name)
+	return fmt.Sprintf("%s/%s-%s", s.Prefix, r, name), nil
 }
 
 func (s Store) DownloadURL(ctx context.Context, s3URL string) (io.ReadCloser, error) {
