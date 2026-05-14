@@ -59,6 +59,7 @@ func createBenchmark(c *fiber.Ctx) error {
 
 	id, created, err := ctrl.CreateBenchmark(c.Context(), request.bench())
 	status := fiber.StatusCreated
+
 	switch {
 	case errors.Is(err, types.ErrBadRequest):
 		status = fiber.StatusBadRequest
