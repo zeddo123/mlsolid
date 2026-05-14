@@ -6,11 +6,22 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
-// Experiment struct returned by Experiment endpoint.
-type Experiment struct {
+// ErrorResponse struct returned when api call is not successful.
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// ExperimentResponse struct returned by Experiment endpoint.
+type ExperimentResponse struct {
 	Details string    `json:"details"`
 	Runs    []runInfo `json:"runs"`
 	Metrics []string  `json:"metrics"`
+}
+
+// ExperimentsResponse struct returned by Experiments endpoint.
+type ExperimentsResponse struct {
+	Details string              `json:"details"`
+	Exps    map[string][]string `json:"exps"`
 }
 
 type runInfo struct {
@@ -19,8 +30,8 @@ type runInfo struct {
 	Color     string    `json:"color"`
 }
 
-// Registry struct returned by registry endpoint.
-type Registry struct {
+// RegistryResponse struct returned by registry endpoint.
+type RegistryResponse struct {
 	Details     string            `json:"details"`
 	Name        string            `json:"name"`
 	LastVer     int64             `json:"lastVer"`
@@ -34,6 +45,24 @@ type entryInfo struct {
 	Tags      []string  `json:"tags"`
 	Name      string    `json:"name"`
 	Run       string    `json:"run"`
+}
+
+// RegistriesResponse response to registries request.
+type RegistriesResponse struct {
+	Details    string   `json:"details"`
+	Registries []string `json:"registries"`
+}
+
+// BenchmarksResponse response returned for Benchmarks endpoint.
+type BenchmarksResponse struct {
+	Details    string   `json:"details"`
+	Benchmarks []string `json:"benchmarks"`
+}
+
+// BenchmarkResponse response returned for Benchmark endpoint.
+type BenchmarkResponse struct {
+	Details   string      `json:"details"`
+	Benchmark types.Bench `json:"benchmark"`
 }
 
 // CreateBenchmarkRequest represents a request to create a new benchmark.
@@ -50,7 +79,71 @@ type CreateBenchmarkRequest struct {
 	DatasetFromS3  bool
 }
 
+// CreateBenchmarkResponse response to a CreateBenchmark request.
+type CreateBenchmarkResponse struct {
+	ID      string `json:"id"`
+	Created bool   `json:"created"`
+	Details string `json:"details"`
+}
+
 // BechmarkBestRequest represents a request to pull best models for each metric.
 type BechmarkBestRequest struct {
 	Metrics []string
+}
+
+// BenchmarkToggleResponse response to benchmark toggle request.
+type BenchmarkToggleResponse struct {
+	Details string `json:"details"`
+}
+
+// BenchmarkUpdateResponse response to Benchmark update request.
+type BenchmarkUpdateResponse struct {
+	Details string `json:"details"`
+}
+
+// BenchmarkRunsResponse response to benchmark runs request.
+type BenchmarkRunsResponse struct {
+	Details string            `json:"details"`
+	Runs    []*types.BenchRun `json:"runs"`
+}
+
+// BenchmarkBestResponse response to benchmark best request.
+type BenchmarkBestResponse struct {
+	Details string                     `json:"details"`
+	Runs    map[string]*types.BenchRun `json:"runs"`
+}
+
+// ArtifactsResponse response to artifacts request.
+type ArtifactsResponse struct {
+	Details   string              `json:"details"`
+	Artifacts map[string][]string `json:"artifacts"`
+}
+
+// MetricsResponse response to metrics request.
+type MetricsResponse struct {
+	Details string   `json:"details"`
+	Metrics []string `json:"metrics"`
+}
+
+// MetricResponse response to metric request.
+type MetricResponse struct {
+	Details string         `json:"details"`
+	Metric  map[string]any `json:"metric"`
+	Kind    string         `json:"kind"`
+}
+
+func (request CreateBenchmarkRequest) bench() types.Bench {
+	return types.Bench{ //nolint: exhaustruct
+		Name:           request.Name,
+		EagerStart:     request.EagerStart,
+		AutoTag:        request.AutoTag,
+		Tag:            request.Tag,
+		DecisionMetric: request.DecisionMetric,
+		Registries:     request.Registries,
+		Metrics:        request.Metrics,
+		DatasetName:    request.DatasetName,
+		DatasetURL:     request.DatasetURL,
+		FromS3:         request.DatasetFromS3,
+		Timestamp:      time.Now(),
+	}
 }

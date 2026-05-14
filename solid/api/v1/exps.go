@@ -10,12 +10,12 @@ func experiments(ctx *fiber.Ctx) error {
 
 	exps, err := ctrl.Exps(ctx.Context())
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "could not retrieve experiments",
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error: "could not retrieve experiments",
 		})
 	}
 
-	overview := make(map[string]any, len(exps))
+	overview := make(map[string][]string, len(exps))
 
 	for _, exp := range exps {
 		runs, err := ctrl.ExpRuns(ctx.Context(), exp)
@@ -23,15 +23,12 @@ func experiments(ctx *fiber.Ctx) error {
 			continue
 		}
 
-		overview[exp] = fiber.Map{
-			"runs":       runs,
-			"runs_count": len(runs),
-		}
+		overview[exp] = runs
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"exps":    overview,
-		"details": "successfully retrieved exps",
+	return ctx.Status(fiber.StatusOK).JSON(ExperimentsResponse{
+		Details: "successfully retrieved exps",
+		Exps:    overview,
 	})
 }
 
@@ -42,21 +39,21 @@ func experiment(ctx *fiber.Ctx) error {
 
 	runs, err := ctrl.ExpRuns(ctx.Context(), expID)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error: err.Error(),
 		})
 	}
 
 	if len(runs) == 0 {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "not runs found for this experiment",
+		return ctx.Status(fiber.StatusNotFound).JSON(ErrorResponse{
+			Error: "not runs found for this experiment",
 		})
 	}
 
 	rs, err := ctrl.Runs(ctx.Context(), runs)
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"details": err.Error(),
+		return ctx.Status(fiber.StatusNotFound).JSON(ErrorResponse{
+			Error: err.Error(),
 		})
 	}
 
@@ -72,7 +69,7 @@ func experiment(ctx *fiber.Ctx) error {
 		}
 	}
 
-	out := Experiment{
+	out := ExperimentResponse{
 		Details: "successfully retrieved experiment",
 		Runs:    runsInfo,
 		Metrics: types.UniqueMetrics(rs),

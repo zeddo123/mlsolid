@@ -13,27 +13,27 @@ func artifacts(ctx *fiber.Ctx) error {
 
 	runs, err := ctrl.ExpRuns(ctx.Context(), expID)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{ //nolint: wrapcheck
+			Error: err.Error(),
 		})
 	}
 
 	if len(runs) == 0 {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "could not find runs linked to experiment",
+		return ctx.Status(fiber.StatusNotFound).JSON(ErrorResponse{ //nolint: wrapcheck
+			Error: "could not find runs linked to experiment",
 		})
 	}
 
 	artifacts, err := ctrl.Artifacts(ctx.Context(), runs)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"details": err.Error(),
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{ //nolint: wrapcheck
+			Error: err.Error(),
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"artifacts": artifacts,
-		"details":   "pulled all artifacts",
+	return ctx.Status(fiber.StatusOK).JSON(ArtifactsResponse{ //nolint: wrapcheck
+		Artifacts: artifacts,
+		Details:   "successfully retrieved experiment artifacts!",
 	})
 }
 
@@ -44,18 +44,18 @@ func artifact(ctx *fiber.Ctx) error {
 
 	artifact, body, err := ctrl.Artifact(ctx.Context(), runID, artifactID)
 	if errors.Is(err, types.ErrNotFound) {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "artifact not found",
+		return ctx.Status(fiber.StatusNotFound).JSON(ErrorResponse{ //nolint: wrapcheck
+			Error: "artifact not found",
 		})
 	} else if errors.Is(err, types.ErrInternal) || err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "could not retrieve artifact",
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{ //nolint: wrapcheck
+			Error: "could not retrieve artifact",
 		})
 	}
 
-	defer body.Close()
+	defer body.Close() //nolint: errcheck
 
 	ctx.Attachment(artifact.Name)
 
-	return ctx.SendStream(body)
+	return ctx.SendStream(body) //nolint: wrapcheck
 }

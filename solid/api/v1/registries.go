@@ -12,14 +12,14 @@ func registries(ctx *fiber.Ctx) error {
 
 	registries, err := ctrl.ModelRegistriesID(ctx.Context())
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err,
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error: err.Error(),
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"registries": registries,
-		"details":    "registries retrieved successfully",
+	return ctx.Status(fiber.StatusOK).JSON(RegistriesResponse{
+		Registries: registries,
+		Details:    "registries retrieved successfully",
 	})
 }
 
@@ -29,12 +29,12 @@ func registry(ctx *fiber.Ctx) error {
 
 	reg, err := ctrl.ModelRegistry(ctx.Context(), id)
 	if errors.Is(err, types.ErrNotFound) {
-		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": err,
+		return ctx.Status(fiber.StatusNotFound).JSON(ErrorResponse{
+			Error: err.Error(),
 		})
 	} else if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err,
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error: err.Error(),
 		})
 	}
 
@@ -49,7 +49,7 @@ func registry(ctx *fiber.Ctx) error {
 		}
 	}
 
-	out := Registry{
+	out := RegistryResponse{
 		Details:     "retrieved model registry successfully",
 		Name:        reg.Name,
 		LastVer:     int64(reg.LatestVersion()),
