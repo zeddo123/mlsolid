@@ -21,6 +21,8 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -33,26 +35,37 @@ type Service struct {
 	Logger     zerolog.Logger
 }
 
+// Config configuration for the grpc service.
+type Config struct {
+	Controller  *controllers.Controller
+	Port        string
+	AuthEnabled bool
+	SSLEnabled  bool
+	CertFile    string
+	KeyFile     string
+	Logger      zerolog.Logger
+}
+
 // StartServer starts a grpc server instance.
-func StartServer(port string, ctrl *controllers.Controller, authEnabled bool, logger zerolog.Logger) {
-	l, err := net.Listen("tcp", ":"+port) //nolint: noctx
+func StartServer(config Config) {
+	l, err := net.Listen("tcp", ":"+config.Port) //nolint: noctx
 	if err != nil {
-		logger.Panic().
+		config.Logger.Panic().
 			Err(err).
-			Str("port", port).
+			Str("port", config.Port).
 			Msg("could not start listening to port")
 	}
 
 	service := Service{ //nolint: exhaustruct
-		Controller: ctrl,
-		Logger:     logger,
+		Controller: config.Controller,
+		Logger:     config.Logger,
 	}
 
 	opts := []logging.Option{
 		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
 	}
 
-	interceptLogger := interceptorLogger(logger)
+	interceptLogger := interceptorLogger(config.Logger)
 
 	unaryIterceptors := []grpc.UnaryServerInterceptor{
 		logging.UnaryServerInterceptor(interceptLogger, opts...),
@@ -62,13 +75,27 @@ func StartServer(port string, ctrl *controllers.Controller, authEnabled bool, lo
 		logging.StreamServerInterceptor(interceptLogger, opts...),
 	}
 
-	if authEnabled {
-		authIntercept := authInterceptor(ctrl)
+	if config.AuthEnabled {
+		authIntercept := authInterceptor(config.Controller)
 		unaryIterceptors = append(unaryIterceptors, auth.UnaryServerInterceptor(authIntercept))
 		streamIterceptors = append(streamIterceptors, auth.StreamServerInterceptor(authIntercept))
 	}
 
+	creds := insecure.NewCredentials()
+
+	if config.SSLEnabled {
+		sslCreds, err := credentials.NewServerTLSFromFile(config.CertFile, config.KeyFile)
+		if err != nil {
+			config.Logger.Panic().
+				Err(err).
+				Msg("could not create gRPC SSL credentials")
+		}
+
+		creds = sslCreds
+	}
+
 	server := grpc.NewServer(
+		grpc.Creds(creds),
 		grpc.ChainUnaryInterceptor(
 			unaryIterceptors...,
 		),
@@ -79,8 +106,9 @@ func StartServer(port string, ctrl *controllers.Controller, authEnabled bool, lo
 
 	mlsolidv1grpc.RegisterMlsolidServiceServer(server, &service)
 
-	logger.Info().
-		Str("port", port).
+	config.Logger.Info().
+		Bool("ssl", config.SSLEnabled).
+		Str("port", config.Port).
 		Msg("gRPC server started")
 
 	if err := server.Serve(l); err != nil {

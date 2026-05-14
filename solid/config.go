@@ -18,8 +18,11 @@ type Config struct {
 	GoogleSecretID       string   `mapstructure:"google_secret_id"`
 	GoogleAllowedDomains []string `mapstructure:"google_allowed_domains"`
 
-	APIPort  string `mapstructure:"api_port"`
-	GrpcPort string `mapstructure:"grpc_port"`
+	APIPort      string `mapstructure:"api_port"`
+	GrpcPort     string `mapstructure:"grpc_port"`
+	GrpcSLL      bool   `mapstructure:"grpc_ssl"`
+	GrpcCertPath string `mapstructure:"grpc_cert_path"`
+	GrpcKeyPath  string `mapstructure:"grpc_key_path"`
 
 	RedisAddr     string `mapstructure:"redis_addr"`
 	RedisPassword string `mapstructure:"redis_password"`
@@ -57,6 +60,9 @@ func LoadConfig(path string) (Config, error) {
 
 	viper.SetDefault("api_port", "8050")
 	viper.SetDefault("grpc_port", "5000")
+	viper.SetDefault("grpc_ssl", false)
+	viper.SetDefault("grpc_cert_path", "./certs/service.pem")
+	viper.SetDefault("grpc_key_path", "./certs/service.key")
 
 	viper.SetDefault("redis_addr", "redis:6379")
 	viper.SetDefault("redis_password", "")

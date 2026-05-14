@@ -98,7 +98,15 @@ func main() {
 		go engine.Start(context.Background())
 	}
 
-	go grpcservice.StartServer(config.GrpcPort, &controller, config.APIKeyAccess, logger.NewSub(log, "gRPC"))
+	go grpcservice.StartServer(grpcservice.Config{
+		Controller:  &controller,
+		Port:        config.GrpcPort,
+		AuthEnabled: config.APIKeyAccess,
+		SSLEnabled:  config.GrpcSLL,
+		CertFile:    config.GrpcCertPath,
+		KeyFile:     config.GrpcKeyPath,
+		Logger:      logger.NewSub(log, "gRPC"),
+	})
 	go api.StartServer(config.APIPort, &controller, oauth.Config{
 		Prod:                 config.Prod,
 		RootURL:              config.RootURL,
