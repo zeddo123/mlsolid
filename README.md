@@ -14,6 +14,7 @@ A solid & sane MLOps platform. It makes it possible to **R&D**, **benchmark**, a
 [![Buf CI](https://github.com/zeddo123/mlsolid/actions/workflows/buf-ci.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/buf-ci.yaml)
 [![.github/workflows/buf-lint.yaml](https://github.com/zeddo123/mlsolid/actions/workflows/buf-lint.yaml/badge.svg)](https://github.com/zeddo123/mlsolid/actions/workflows/buf-lint.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zeddo123/mlsolid)](https://goreportcard.com/report/github.com/zeddo123/mlsolid)
+![PyPI - Version](https://img.shields.io/pypi/v/mlsolidpy)
 
 </div>
 
