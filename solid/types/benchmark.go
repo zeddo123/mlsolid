@@ -42,12 +42,12 @@ type UpdateBench struct {
 
 // BenchRun represents a benchmark run on a registry and version.
 type BenchRun struct {
-	Registry  string
-	Version   int64
-	Metrics   map[string]float32
-	Timestamp time.Time
-	Start     time.Time
-	End       time.Time
+	Registry  string             `json:"registry"`
+	Version   int64              `json:"version"`
+	Metrics   map[string]float32 `json:"metrics"`
+	Timestamp time.Time          `json:"timestamp"`
+	Start     time.Time          `json:"start"`
+	End       time.Time          `json:"end"`
 }
 
 // BenchEvent represents a benchmarking event.
