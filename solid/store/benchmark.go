@@ -252,6 +252,8 @@ func (r *RedisStore) RecordRuns(ctx context.Context, benchID string, runs []type
 			"Registry":  run.Registry,
 			"Version":   run.Version,
 			"Timestamp": run.Timestamp,
+			"Start":     run.Start,
+			"End":       run.End,
 		})
 		// set index
 		p.SAdd(ctx, indexKey, runKey)
@@ -485,9 +487,21 @@ func (r *RedisStore) parseBenchRun(m map[string]string) (*types.BenchRun, error)
 		return nil, fmt.Errorf("could not parse run Timestamp: %w", err)
 	}
 
+	start, err := time.Parse(time.RFC3339, m["Start"])
+	if err != nil {
+		start = time.Time{}
+	}
+
+	end, err := time.Parse(time.RFC3339, m["End"])
+	if err != nil {
+		end = time.Time{}
+	}
+
 	delete(m, "Registry")
 	delete(m, "Version")
 	delete(m, "Timestamp")
+	delete(m, "Start")
+	delete(m, "End")
 
 	metrics := make(map[string]float32, len(m))
 
@@ -508,6 +522,8 @@ func (r *RedisStore) parseBenchRun(m map[string]string) (*types.BenchRun, error)
 
 	return &types.BenchRun{
 		Timestamp: timestamp,
+		Start:     start,
+		End:       end,
 		Registry:  reg,
 		Version:   v,
 		Metrics:   metrics,

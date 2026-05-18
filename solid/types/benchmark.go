@@ -46,6 +46,8 @@ type BenchRun struct {
 	Version   int64
 	Metrics   map[string]float32
 	Timestamp time.Time
+	Start     time.Time
+	End       time.Time
 }
 
 // BenchEvent represents a benchmarking event.
