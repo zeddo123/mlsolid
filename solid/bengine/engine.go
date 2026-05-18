@@ -222,11 +222,15 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 	// Load model if not present
 	checkpointPath := filepath.Join(e.rootDest, "checkpoints", "model.pth")
 
+	start := time.Now()
+
 	result, err := e.RunContainer(ctx, event.DockerImage,
 		event.DatasetName, datasetPath, checkpointPath)
 	if err != nil {
 		return err
 	}
+
+	end := time.Now()
 
 	e.l.Info().Str("result", result).Msg("container exited successfully")
 
@@ -236,7 +240,7 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 		return nil
 	}
 
-	return e.RecordRun(ctx, event, result)
+	return e.RecordRun(ctx, event, start, end, result)
 }
 
 // PullDatasetFromS3 pulls a dataset from a S3 object.
@@ -399,7 +403,7 @@ func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPa
 }
 
 // RecordRun records a run into the store.
-func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, result string) error {
+func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, start, end time.Time, result string) error {
 	metrics := make(map[string]float32)
 
 	e.l.Debug().Str("result", result).Msg("unmarshalling result")
@@ -422,6 +426,8 @@ func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, result 
 		Version:   event.Version,
 		Metrics:   metrics,
 		Timestamp: time.Now(),
+		Start:     start,
+		End:       end,
 	}})
 	if err != nil {
 		return fmt.Errorf("could not record run into the store: %w", err)

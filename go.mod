@@ -3,14 +3,14 @@ module github.com/zeddo123/mlsolid
 go 1.25.0
 
 require (
-	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.6.2-20260511202834-13b79e685e64.1
-	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260511202834-13b79e685e64.1
+	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.6.2-20260514105251-5529e0683f44.1
+	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260514105251-5529e0683f44.1
 	github.com/anandvarma/namegen v1.1.1
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0
-	github.com/docker/cli v29.4.3+incompatible
+	github.com/docker/cli v29.5.0+incompatible
 	github.com/docker/go-sdk/container v0.1.0-alpha015
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/gofiber/fiber/v2 v2.52.13
@@ -31,7 +31,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/redis v0.35.0
 	github.com/urfave/cli/v3 v3.8.0
 	github.com/zeddo123/pubgo v0.2.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 )
 
