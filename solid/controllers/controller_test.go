@@ -134,7 +134,7 @@ func TestModelRegistryFlow(t *testing.T) {
 		err = controller.AddArtifacts(t.Context(), "run2", []types.Artifact{artifact})
 		require.NoError(t, err)
 
-		err = controller.CreateModelRegistry(t.Context(), "exp2-registry")
+		err = controller.CreateModelRegistry(t.Context(), "exp2-registry", types.RegistryBenchmarkOps{})
 		require.NoError(t, err)
 
 		err = controller.AddArtifactToRegistry(t.Context(), "exp2-registry", "run2", "model_path.pt", "prod")
