@@ -50,12 +50,14 @@ func registry(ctx *fiber.Ctx) error {
 	}
 
 	out := RegistryResponse{
-		Details:     "retrieved model registry successfully",
-		Name:        reg.Name,
-		LastVer:     int64(reg.LatestVersion()),
-		Tags:        reg.Tags,
-		CreatedAt:   reg.Timestamp,
-		EntriesInfo: infos,
+		Details:                 "retrieved model registry successfully",
+		Name:                    reg.Name,
+		LastVer:                 int64(reg.LatestVersion()),
+		Tags:                    reg.Tags,
+		CreatedAt:               reg.Timestamp,
+		EntriesInfo:             infos,
+		BenchmarkImage:          reg.BenchmarkImage,
+		BenchmarkGpuPassthrough: reg.BenchmarkGpuPassthrough,
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(out)

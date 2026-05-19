@@ -886,6 +886,12 @@ components:
           description: Map of entry IDs to their information
           additionalProperties:
             $ref: '#/components/schemas/EntryInfo'
+        benchmarkImage:
+          type: string
+          description: docker image for benchmarking
+        benchmarkGpuPassthrough:
+          type: boolean
+          description: enable/disable gpu passthrough when benchmarking
       required:
         - details
         - name

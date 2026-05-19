@@ -18,11 +18,12 @@ type ModelEntry struct {
 
 // ModelRegistry holds data related to a registry.
 type ModelRegistry struct {
-	Name           string
-	Models         []ModelEntry
-	Tags           map[string][]int
-	Timestamp      time.Time
-	BenchmarkImage string
+	Name                    string
+	Models                  []ModelEntry
+	Tags                    map[string][]int
+	Timestamp               time.Time
+	BenchmarkImage          string
+	BenchmarkGpuPassthrough bool
 }
 
 // NewModelRegistry creates a new registry.
@@ -159,9 +160,10 @@ func (m *ModelRegistry) AddTag(tag string, version int) error {
 	return nil
 }
 
-// SetBenchmarkImage sets the benchmark image of Model registry.
-func (m *ModelRegistry) SetBenchmarkImage(image string) error {
+// SetBenchmarkOps sets the benchmark options of the registry.
+func (m *ModelRegistry) SetBenchmarkOps(image string, gpuPassthrough bool) error {
 	m.BenchmarkImage = image
+	m.BenchmarkGpuPassthrough = gpuPassthrough
 
 	return nil
 }

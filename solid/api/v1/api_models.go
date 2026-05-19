@@ -32,12 +32,14 @@ type runInfo struct {
 
 // RegistryResponse struct returned by registry endpoint.
 type RegistryResponse struct {
-	Details     string            `json:"details"`
-	Name        string            `json:"name"`
-	LastVer     int64             `json:"lastVer"`
-	Tags        map[string][]int  `json:"tags"`
-	CreatedAt   time.Time         `json:"createdAt,format:datetime"`
-	EntriesInfo map[int]entryInfo `json:"entriesInfo"`
+	Details                 string            `json:"details"`
+	Name                    string            `json:"name"`
+	LastVer                 int64             `json:"lastVer"`
+	Tags                    map[string][]int  `json:"tags"`
+	CreatedAt               time.Time         `json:"createdAt,format:datetime"`
+	EntriesInfo             map[int]entryInfo `json:"entriesInfo"`
+	BenchmarkImage          string            `json:"benchmarkImage"`
+	BenchmarkGpuPassthrough bool              `json:"benchmarkGpuPassthrough"`
 }
 
 type entryInfo struct {
