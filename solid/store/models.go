@@ -42,9 +42,10 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 
 	// Setting model info under key "info:registry:<name>"
 	p.HSet(ctx, infoKey, map[string]string{
-		"Name":           m.Name,
-		"Timestamp":      m.Timestamp.Format(time.RFC3339),
-		"BenchmarkImage": m.BenchmarkImage,
+		"Name":                    m.Name,
+		"Timestamp":               m.Timestamp.Format(time.RFC3339),
+		"BenchmarkImage":          m.BenchmarkImage,
+		"BenchmarkGpuPassthrough": strconv.FormatBool(m.BenchmarkGpuPassthrough),
 	})
 
 	// Setting model entries under key "registry:<name>"
@@ -136,7 +137,17 @@ func (r *RedisStore) ModelRegistry(ctx context.Context, name string) (*types.Mod
 
 	registry.Models = make([]types.ModelEntry, len(entries))
 
-	err = registry.SetBenchmarkImage(info["BenchmarkImage"])
+	benchmarkImage := info["BenchmarkImage"]
+
+	benchmarkGpuPassthrough, err := strconv.ParseBool(info["BenchmarkGpuPassthrough"])
+	if err != nil {
+		r.Logger.Error().
+			Err(err).
+			Str("BenchmarkGpuPassthrough", info["BenchmarkGpuPassthrough"]).
+			Msg("could not parse bool value")
+	}
+
+	err = registry.SetBenchmarkOps(benchmarkImage, benchmarkGpuPassthrough)
 	if err != nil {
 		r.Logger.Error().Err(err).Msg("could not set registry benchmark image container")
 	}

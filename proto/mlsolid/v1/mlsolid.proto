@@ -48,6 +48,7 @@ service MlsolidService {
   rpc StreamTaggedModel(StreamTaggedModelRequest) returns (stream StreamTaggedModelResponse);
   rpc TagModel(TagModelRequest) returns (TagModelResponse);
   rpc SetBenchmarkContainer(SetBenchmarkContainerRequest) returns (SetBenchmarkContainerResponse);
+  rpc SetRegistryBenchmarkOps(SetRegistryBenchmarkOpsRequest) returns (SetRegistryBenchmarkOpsResponse);
 
   // Benchmarks
   rpc Benchmark(BenchmarkRequest) returns (BenchmarkResponse);
@@ -165,6 +166,8 @@ message ArtifactResponse {
 
 message CreateModelRegistryRequest {
   string name = 1;
+  string benchmark_image = 2;
+  bool benchmark_pass_gpu = 3;
 }
 
 message CreateModelRegistryResponse {
@@ -230,6 +233,18 @@ message SetBenchmarkContainerRequest {
 
 message SetBenchmarkContainerResponse {
   bool set = 1;
+}
+
+message SetRegistryBenchmarkOpsRequest{
+  string name = 1;
+  optional string benchmark_image = 2;
+  optional bool benchmark_pass_gpu = 3;
+}
+
+message SetRegistryBenchmarkOpsResponse{
+  string name = 1;
+  string benchmark_image = 2;
+  bool benchmark_pass_gpu = 3;
 }
 
 message BenchmarkMetric {
