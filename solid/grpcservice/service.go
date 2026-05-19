@@ -340,7 +340,7 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 func (s *Service) CreateModelRegistry(ctx context.Context,
 	req *mlsolidv1.CreateModelRegistryRequest,
 ) (*mlsolidv1.CreateModelRegistryResponse, error) {
-	err := s.Controller.CreateModelRegistry(ctx, req.GetName())
+	err := s.Controller.CreateModelRegistry(ctx, req.GetName(), types.RegistryBenchmarkOps{})
 	if err != nil {
 		return nil, ParseError(err)
 	}
