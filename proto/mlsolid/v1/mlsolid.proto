@@ -235,13 +235,13 @@ message SetBenchmarkContainerResponse {
   bool set = 1;
 }
 
-message SetRegistryBenchmarkOpsRequest{
+message SetRegistryBenchmarkOpsRequest {
   string name = 1;
   optional string benchmark_image = 2;
   optional bool benchmark_pass_gpu = 3;
 }
 
-message SetRegistryBenchmarkOpsResponse{
+message SetRegistryBenchmarkOpsResponse {
   string name = 1;
   string benchmark_image = 2;
   bool benchmark_pass_gpu = 3;
