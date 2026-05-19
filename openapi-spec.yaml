@@ -249,6 +249,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /v1/registry:
+    post:
+      description: create a new model registry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegistryRequest'
+      responses:
+        201:
+          description: model registry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRegistryResponse'
+        400:
+          description: could not create model registry due to bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: could not retrieve resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/registry/{id}:
     get:
       description: retrieve a model registry
@@ -538,6 +567,16 @@ paths:
 
 components:
   schemas:
+    CreateRegistryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        benchmarkImage:
+          type: string
+        benchmarkGpuPassthrough:
+          type: boolean
+
     CreateBenchmarkRequest:
       type: object
       properties:
@@ -736,6 +775,17 @@ components:
           description: description of successful operation
         registry:
           $ref: '#/components/schemas/Registry'
+
+    CreateRegistryResponse:
+      type: object
+      required:
+        - details
+        - id
+      properties:
+        details:
+          type: string
+        id:
+          type: string
 
     BenchmarksResponse:
       type: object

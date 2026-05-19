@@ -19,12 +19,14 @@ func (c *Controller) ModelRegistry(ctx context.Context, name string) (*types.Mod
 }
 
 // CreateModelRegistry creates a new model registry with the specified name.
-func (c *Controller) CreateModelRegistry(ctx context.Context, name string) error {
+func (c *Controller) CreateModelRegistry(ctx context.Context,
+	name string, benchmarkingOps types.RegistryBenchmarkOps,
+) error {
 	if name == "" {
 		return types.NewBadRequest("model registry name cannot be empty") //nolint: wrapcheck
 	}
 
-	err := c.Redis.CreateModelRegistry(ctx, *types.NewModelRegistry(name))
+	err := c.Redis.CreateModelRegistry(ctx, *types.NewModelRegistryWithBenchmarkOps(name, benchmarkingOps))
 	if err != nil {
 		return fmt.Errorf("failed creating model registry %q : %w", name, err)
 	}

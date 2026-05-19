@@ -30,6 +30,7 @@ func BuildRoutes(f *fiber.App, middlewares ...fiber.Handler) error {
 
 	v1.Get("/registries", registries)
 	v1.Get("/registry/:id", registry)
+	v1.Post("/registry", createRegistry)
 
 	v1.Get("/benchmarks", benchmarks)
 	v1.Get("/benchmark/:id", benchmark)

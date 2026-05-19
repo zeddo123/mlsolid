@@ -55,6 +55,19 @@ type RegistriesResponse struct {
 	Registries []string `json:"registries"`
 }
 
+// CreateRegistryRequest payload to create a new registry model.
+type CreateRegistryRequest struct {
+	Name                    string `json:"name"`
+	BenchmarkGpuPassthrough bool   `json:"benchmarkGpuPassthrough"`
+	BenchmarkImage          string `json:"benchmarkImage"`
+}
+
+// CreateRegistryResponse response to a registry creation request.
+type CreateRegistryResponse struct {
+	Details string `json:"details"`
+	ID      string `json:"id"`
+}
+
 // BenchmarksResponse response returned for Benchmarks endpoint.
 type BenchmarksResponse struct {
 	Details    string   `json:"details"`
