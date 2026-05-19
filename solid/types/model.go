@@ -46,6 +46,7 @@ func NewModelRegistryWithBenchmarkOps(name string, opts RegistryBenchmarkOps) *M
 	r := NewModelRegistry(name)
 
 	r.BenchmarkImage = opts.BenchmarkImage
+	r.BenchmarkGpuPassthrough = opts.BenchmarkGpuPassthrough
 
 	return r
 }

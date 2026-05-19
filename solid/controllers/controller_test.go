@@ -119,6 +119,8 @@ func TestArtifact(t *testing.T) {
 
 func TestModelRegistryFlow(t *testing.T) {
 	t.Run("create_and_pull_model_from_registry", func(t *testing.T) {
+		const dockerImage string = "ghcr.io/zeddo123/bench-dummy:0.0.4"
+
 		t.Parallel()
 		// Arrange
 		controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
@@ -134,7 +136,10 @@ func TestModelRegistryFlow(t *testing.T) {
 		err = controller.AddArtifacts(t.Context(), "run2", []types.Artifact{artifact})
 		require.NoError(t, err)
 
-		err = controller.CreateModelRegistry(t.Context(), "exp2-registry", types.RegistryBenchmarkOps{})
+		err = controller.CreateModelRegistry(t.Context(), "exp2-registry", types.RegistryBenchmarkOps{
+			BenchmarkImage:          dockerImage,
+			BenchmarkGpuPassthrough: true,
+		})
 		require.NoError(t, err)
 
 		err = controller.AddArtifactToRegistry(t.Context(), "exp2-registry", "run2", "model_path.pt", "prod")
@@ -158,6 +163,8 @@ func TestModelRegistryFlow(t *testing.T) {
 		assert.Equal(t, "run2", registry.LastModel().Run)
 		assert.Equal(t, "model_path.pt", registry.LastModel().Name)
 		assert.Equal(t, 1, registry.LastModel().Version)
+		assert.Equal(t, true, registry.BenchmarkGpuPassthrough)
+		assert.Equal(t, dockerImage, registry.BenchmarkImage)
 	})
 }
 
