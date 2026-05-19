@@ -3,14 +3,14 @@ module github.com/zeddo123/mlsolid
 go 1.25.0
 
 require (
-	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.6.2-20260514105251-5529e0683f44.1
-	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260514105251-5529e0683f44.1
+	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.6.2-20260519164050-2540ddc751d5.1
+	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260519164050-2540ddc751d5.1
 	github.com/anandvarma/namegen v1.1.1
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0
-	github.com/docker/cli v29.5.0+incompatible
+	github.com/docker/cli v29.5.1+incompatible
 	github.com/docker/go-sdk/container v0.1.0-alpha015
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/gofiber/fiber/v2 v2.52.13
@@ -158,6 +158,6 @@ require (
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260511170946-3700d4141b60 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260519071638-aa98bba5eb94 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
