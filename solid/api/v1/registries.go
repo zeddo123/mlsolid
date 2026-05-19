@@ -62,3 +62,34 @@ func registry(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusOK).JSON(out)
 }
+
+func createRegistry(ctx *fiber.Ctx) error {
+	ctrl := ctxController(ctx)
+
+	var payload CreateRegistryRequest
+
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	err := ctrl.CreateModelRegistry(ctx.Context(), payload.Name, types.RegistryBenchmarkOps{
+		BenchmarkImage:          payload.BenchmarkImage,
+		BenchmarkGpuPassthrough: payload.BenchmarkGpuPassthrough,
+	})
+	if errors.Is(err, types.ErrBadRequest) {
+		return ctx.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error: err.Error(),
+		})
+	} else if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusCreated).JSON(CreateRegistryResponse{
+		Details: "model registry created successfully",
+		ID:      payload.Name,
+	})
+}

@@ -26,6 +26,11 @@ type ModelRegistry struct {
 	BenchmarkGpuPassthrough bool
 }
 
+type RegistryBenchmarkOps struct {
+	BenchmarkImage          string
+	BenchmarkGpuPassthrough bool
+}
+
 // NewModelRegistry creates a new registry.
 func NewModelRegistry(name string) *ModelRegistry {
 	return &ModelRegistry{ //nolint: exhaustruct
@@ -34,6 +39,15 @@ func NewModelRegistry(name string) *ModelRegistry {
 		Tags:      make(map[string][]int),
 		Timestamp: time.Now(),
 	}
+}
+
+// NewModelRegistryWithBenchmarkOps create a new registry with benchmarking opts.
+func NewModelRegistryWithBenchmarkOps(name string, opts RegistryBenchmarkOps) *ModelRegistry {
+	r := NewModelRegistry(name)
+
+	r.BenchmarkImage = opts.BenchmarkImage
+
+	return r
 }
 
 // NewModelRegistryWithTime creates a new registry with a specific Timestamp.
