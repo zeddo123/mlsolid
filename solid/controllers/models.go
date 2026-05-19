@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -137,11 +136,16 @@ func (c *Controller) ModelRegistriesID(ctx context.Context) ([]string, error) {
 
 // UpdateRegistryDockerImage updates the docker image of a registry.
 func (c *Controller) UpdateRegistryDockerImage(ctx context.Context, registry, dockerImage string) error {
-	if dockerImage == "" {
-		return errors.New("invalid dockerImage")
+	err := c.Redis.UpdateRegistryDockerImage(ctx, registry, dockerImage)
+	if err != nil {
+		return fmt.Errorf("update failed: %w", err)
 	}
 
-	err := c.Redis.UpdateRegistryDockerImage(ctx, registry, dockerImage)
+	return nil
+}
+
+func (c *Controller) UpdateRegistryBenchmarkGpuPassthrough(ctx context.Context, registry string, pass bool) error {
+	err := c.Redis.UpdateRegistryBenchmarkGpuPassthrough(ctx, registry, pass)
 	if err != nil {
 		return fmt.Errorf("update failed: %w", err)
 	}

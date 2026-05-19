@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	buf.build/gen/go/zeddo123/mlsolid/grpc/go v1.6.2-20260519164050-2540ddc751d5.1
-	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260519164050-2540ddc751d5.1
+	buf.build/gen/go/zeddo123/mlsolid/protocolbuffers/go v1.36.11-20260519164257-baf99923dd49.1
 	github.com/anandvarma/namegen v1.1.1
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.17

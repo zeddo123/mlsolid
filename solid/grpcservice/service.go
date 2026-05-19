@@ -340,7 +340,10 @@ func (s *Service) AddArtifact(stream mlsolidv1grpc.MlsolidService_AddArtifactSer
 func (s *Service) CreateModelRegistry(ctx context.Context,
 	req *mlsolidv1.CreateModelRegistryRequest,
 ) (*mlsolidv1.CreateModelRegistryResponse, error) {
-	err := s.Controller.CreateModelRegistry(ctx, req.GetName(), types.RegistryBenchmarkOps{})
+	err := s.Controller.CreateModelRegistry(ctx, req.GetName(), types.RegistryBenchmarkOps{
+		BenchmarkImage:          req.GetBenchmarkImage(),
+		BenchmarkGpuPassthrough: req.GetBenchmarkPassGpu(),
+	})
 	if err != nil {
 		return nil, ParseError(err)
 	}
@@ -464,6 +467,28 @@ func (s *Service) SetBenchmarkContainer(ctx context.Context, req *mlsolidv1.SetB
 	}
 
 	return &mlsolidv1.SetBenchmarkContainerResponse{Set: true}, nil
+}
+
+func (s *Service) SetRegistryBenchmarkOps(ctx context.Context, req *mlsolidv1.SetRegistryBenchmarkOpsRequest) (*mlsolidv1.SetRegistryBenchmarkOpsResponse, error) {
+	if req.BenchmarkImage != nil {
+		err := s.Controller.UpdateRegistryDockerImage(ctx, req.GetName(), req.GetBenchmarkImage())
+		if err != nil {
+			return nil, ParseError(err)
+		}
+	}
+
+	if req.BenchmarkPassGpu != nil {
+		err := s.Controller.UpdateRegistryBenchmarkGpuPassthrough(ctx, req.GetName(), req.GetBenchmarkPassGpu())
+		if err != nil {
+			return nil, ParseError(err)
+		}
+	}
+
+	return &mlsolidv1.SetRegistryBenchmarkOpsResponse{
+		Name:             req.GetName(),
+		BenchmarkImage:   req.GetBenchmarkImage(),
+		BenchmarkPassGpu: req.GetBenchmarkPassGpu(),
+	}, nil
 }
 
 // Benchmarks returns a list of benchmark ids.
