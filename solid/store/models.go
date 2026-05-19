@@ -370,6 +370,21 @@ func (r *RedisStore) UpdateRegistryDockerImage(ctx context.Context, registry, do
 	return nil
 }
 
+// UpdateRegistryBenchmarkGpuPassthrough updates a registry's BenchmarkGpuPassthrough option.
+func (r *RedisStore) UpdateRegistryBenchmarkGpuPassthrough(ctx context.Context, registry string, pass bool) error {
+	if err := r.ModelRegistryExists(ctx, registry); err != nil {
+		return err
+	}
+
+	_, err := r.Client.HSet(ctx, r.makeModelRegistryInfoKey(registry),
+		"BenchmarkGpuPassthrough", strconv.FormatBool(pass)).Result()
+	if err != nil {
+		return fmt.Errorf("could not set BenchmarkGpuPassthrough: %w", err)
+	}
+
+	return nil
+}
+
 // ModelRegistriesID returns a slice of all known registry ids.
 func (r *RedisStore) ModelRegistriesID(ctx context.Context) ([]string, error) {
 	keys, err := r.scanKeys(ctx, ModelRegistryMatchPattern)
