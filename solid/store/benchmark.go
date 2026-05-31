@@ -420,7 +420,7 @@ func parseBenchmark(benchID string, data, metrics *redis.MapStringStringCmd,
 		return nil, fmt.Errorf("could not parse benchmark: %w", err)
 	}
 
-	timestamp, err := time.Parse(time.RFC3339, mapping["FromS3"])
+	timestamp, err := time.Parse(time.RFC3339, mapping["Timestamp"])
 	if err != nil {
 		return nil, fmt.Errorf("could not parse benchmark timestamp: %w", err)
 	}

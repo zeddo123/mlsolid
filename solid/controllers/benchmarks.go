@@ -10,12 +10,12 @@ import (
 
 // CreateBenchmark creates a new benchmark.
 func (c *Controller) CreateBenchmark(ctx context.Context, b types.Bench) (string, bool, error) {
+	b.GenerateID()
+	b.Sanitize()
+
 	if err := b.Validate(); err != nil {
 		return "", false, fmt.Errorf("%w: invalid benchmark: %w", types.ErrBadRequest, err)
 	}
-
-	b.GenerateID()
-	b.Sanitize()
 
 	created, err := c.Redis.CreateBenchmark(ctx, b)
 	if err != nil {
