@@ -31,13 +31,12 @@ func NewAPI(ctrl *controllers.Controller, cfg oauth.Config) *fiber.App {
 
 	oauth.NewAuth(cfg)
 
+	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{ //nolint: exhaustruct
 		AllowOrigins:     cfg.FrontendURL,
-		AllowHeaders:     "Origin, Content-Type, Accept",
 		AllowCredentials: true,
 	}))
 	app.Use(csrf.New())
-	app.Use(logger.New())
 
 	// Inject controller into fiber's context
 	app.Use(func(ctx *fiber.Ctx) error {

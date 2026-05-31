@@ -16,7 +16,7 @@ type Bench struct {
 	Paused         bool          `json:"paused"`
 	EagerStart     bool          `json:"eagerStart"`
 	AutoTag        bool          `json:"autoTag"`
-	Tag            string        `json:"tag"            validate:"required"`
+	Tag            string        `json:"tag"`
 	DecisionMetric string        `json:"decisionMetric"`
 	Registries     []string      `json:"registries"     validate:"required"`
 	Metrics        []BenchMetric `json:"metrics"        validate:"required"`
