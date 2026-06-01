@@ -53,7 +53,7 @@ func NewAPI(ctrl *controllers.Controller, cfg oauth.Config) *fiber.App {
 	app.Get("/login/:provider", goth_fiber.BeginAuthHandler)
 
 	app.Get("/authorize", authedUser(session), func(c *fiber.Ctx) error {
-		key, err := ctrl.GenerateKey(c.Context())
+		key, err := ctrl.GenerateKey(c.Context(), time.Now().String())
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "could not generate api key",
