@@ -8,6 +8,6 @@ func (c *Controller) IsValidAPIKey(ctx context.Context, key string) (bool, error
 }
 
 // GenerateKey generates a new API Key.
-func (c *Controller) GenerateKey(ctx context.Context) (string, error) {
-	return c.Redis.GenerateKey(ctx) //nolint: wrapcheck
+func (c *Controller) GenerateKey(ctx context.Context, label string) (string, error) {
+	return c.Redis.GenerateKey(ctx, label) //nolint: wrapcheck
 }

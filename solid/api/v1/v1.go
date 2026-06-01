@@ -41,5 +41,8 @@ func BuildRoutes(f *fiber.App, middlewares ...fiber.Handler) error {
 	v1.Get("/benchmark/:id/runs", benchmarkRuns)
 	v1.Get("/benchmark/:id/best", benchmarkBest)
 
+	v1.Get("/keys", keys)
+	v1.Post("/key", key)
+
 	return nil
 }

@@ -525,6 +525,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /v1/keys:
+    get:
+      description: retrieve all api key labels
+      parameters:
+        - name: label
+          in: query
+          description: api key label
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: key labels retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyLabelsResponse'
+        500:
+          description: could not fetch api key labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/key:
+    post:
+      description: create new api key
+      responses:
+        201:
+          description: api key created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyResponse'
+        500:
+          description: could not create api key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/benchmark/{id}/best:
     get:
       description: retrieve best benchmark runs
@@ -880,6 +926,33 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/BenchRun'
+
+    KeyLabelsResponse:
+      type: object
+      required:
+        - details
+        - labels
+      properties:
+        details:
+          type: string
+        labels:
+          type: object
+          description: Map of label names to timestamps
+          additionalProperties:
+            type: string
+            format: date-time
+            description: Timestamp in RFC3339 format (e.g., 2024-01-01T12:00:00Z)
+
+    KeyResponse:
+      type: object
+      required:
+        - details
+        - key
+      properties:
+        details:
+          type: string
+        key:
+          type: string
 
     RunInfo:
       type: object
