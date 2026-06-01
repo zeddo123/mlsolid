@@ -96,6 +96,10 @@ func (r *RedisStore) makeAPIKey(key string) string {
 	return fmt.Sprintf(APIKeyPattern, key)
 }
 
+func (r *RedisStore) makeAPIKeyMatchingPattern() string {
+	return fmt.Sprintf(APIKeyPattern, "*")
+}
+
 func (r *RedisStore) makeExpKey(id string) string {
 	return fmt.Sprintf(ExpKeyPattern, id)
 }

@@ -147,6 +147,18 @@ type MetricResponse struct {
 	Kind    string         `json:"kind"`
 }
 
+// KeyLabelsResponse response to keys request.
+type KeyLabelsResponse struct {
+	Details string               `json:"details"`
+	Labels  map[string]time.Time `json:"labels"`
+}
+
+// KeyResponse response to generating api key.
+type KeyResponse struct {
+	Details string `json:"details"`
+	Key     string `json:"key"`
+}
+
 func (request CreateBenchmarkRequest) bench() types.Bench {
 	return types.Bench{ //nolint: exhaustruct
 		Name:           request.Name,
