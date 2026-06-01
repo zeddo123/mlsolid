@@ -528,13 +528,6 @@ paths:
   /v1/keys:
     get:
       description: retrieve all api key labels
-      parameters:
-        - name: label
-          in: query
-          description: api key label
-          required: true
-          schema:
-            type: string
       responses:
         200:
           description: key labels retrieved successfully
@@ -551,6 +544,13 @@ paths:
   /v1/key:
     post:
       description: create new api key
+      parameters:
+        - name: label
+          in: query
+          description: api key label
+          required: true
+          schema:
+            type: string
       responses:
         201:
           description: api key created successfully
