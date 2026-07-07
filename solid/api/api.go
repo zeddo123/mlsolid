@@ -6,7 +6,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/shareed2k/goth_fiber"
@@ -19,12 +18,17 @@ import (
 func NewAPI(ctrl *controllers.Controller, cfg oauth.Config) *fiber.App {
 	app := fiber.New(fiber.Config{}) //nolint: exhaustruct
 
-	// Create session store
+	// Create session store.
+	// CookieSameSite: "Lax" combined with the exact-origin CORS policy below
+	// is our CSRF mitigation, since fiber's csrf middleware hard-requires the
+	// Referer host to match the API's own host and can't work with a SPA
+	// hosted on a different subdomain.
 	config := session.Config{ //nolint: exhaustruct
 		KeyLookup:      "cookie:mlsolid",
 		Expiration:     24 * time.Hour, //nolint: mnd
 		CookieSecure:   cfg.Prod,
 		CookieHTTPOnly: true,
+		CookieSameSite: "Lax",
 	}
 
 	session := session.New(config)
@@ -36,7 +40,6 @@ func NewAPI(ctrl *controllers.Controller, cfg oauth.Config) *fiber.App {
 		AllowOrigins:     cfg.FrontendURL,
 		AllowCredentials: true,
 	}))
-	app.Use(csrf.New())
 
 	// Inject controller into fiber's context
 	app.Use(func(ctx *fiber.Ctx) error {
