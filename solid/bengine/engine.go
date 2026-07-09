@@ -22,7 +22,6 @@ import (
 	"github.com/moby/moby/client"
 	"github.com/rs/zerolog"
 	"github.com/zeddo123/mlsolid/solid/s3"
-	"github.com/zeddo123/mlsolid/solid/store"
 	"github.com/zeddo123/mlsolid/solid/types"
 	"github.com/zeddo123/pubgo"
 )
@@ -30,9 +29,16 @@ import (
 // Opts handler function for setting engine configuration.
 type Opts func(cfg *Config)
 
+// RunRecorder records completed benchmark runs. Satisfied by
+// *controllers.Controller; kept narrow so bengine doesn't need access to
+// the rest of the controller's surface.
+type RunRecorder interface {
+	RecordRuns(ctx context.Context, benchID string, runs []types.BenchRun) error
+}
+
 // Engine is a benchmark runner with docker containers.
 type Engine struct {
-	store            *store.RedisStore
+	recorder         RunRecorder
 	sub              *pubgo.Subscription
 	s3               s3.ObjectStore
 	registryUsername string
@@ -44,7 +50,7 @@ type Engine struct {
 
 // Config struct for a bengine instance.
 type Config struct {
-	Store            *store.RedisStore
+	Recorder         RunRecorder
 	Sub              *pubgo.Subscription
 	S3               s3.ObjectStore
 	RegistryUsername string
@@ -110,11 +116,11 @@ func WithS3(store s3.ObjectStore) Opts {
 	}
 }
 
-// WithRedisStore sets the redis store used to record benchmarking runs.
-// If no redis store is provided, saving is skipped.
-func WithRedisStore(store *store.RedisStore) Opts {
+// WithRunRecorder sets the recorder used to save benchmarking runs.
+// If none is provided, saving is skipped.
+func WithRunRecorder(recorder RunRecorder) Opts {
 	return func(cfg *Config) {
-		cfg.Store = store
+		cfg.Recorder = recorder
 	}
 }
 
@@ -138,7 +144,7 @@ func New(sub *pubgo.Subscription, opts ...Opts) *Engine {
 		Timestamp().Logger()
 
 	return &Engine{
-		store:            cfg.Store,
+		recorder:         cfg.Recorder,
 		sub:              sub,
 		s3:               cfg.S3,
 		registryUsername: cfg.RegistryUsername,
@@ -234,8 +240,8 @@ func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *ty
 
 	e.l.Info().Str("result", result).Msg("container exited successfully")
 
-	if e.store == nil {
-		e.l.Info().Str("result", result).Msg("Redis store not configured skipping")
+	if e.recorder == nil {
+		e.l.Info().Str("result", result).Msg("run recorder not configured, skipping")
 
 		return nil
 	}
@@ -421,7 +427,7 @@ func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, start, 
 		Int("Version", int(event.Version)).
 		Msg("recording bench run into the store")
 
-	err = e.store.RecordRuns(ctx, event.BenchID, []types.BenchRun{{
+	err = e.recorder.RecordRuns(ctx, event.BenchID, []types.BenchRun{{
 		Registry:  event.Registry,
 		Version:   event.Version,
 		Metrics:   metrics,

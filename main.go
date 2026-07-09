@@ -89,7 +89,7 @@ func main() {
 		sub := bus.Subscribe("bengine", pubgo.WithBufferSize(BengineBufferSize))
 
 		engine := bengine.New(sub,
-			bengine.WithRedisStore(&store),
+			bengine.WithRunRecorder(&controller),
 			bengine.WithS3(objectStore),
 			bengine.WithHostSourceVolume(config.HostSourceVolume),
 			bengine.WithRegistryCreds(config.DockerRegistryUsername, config.DockerRegistryPassword),
