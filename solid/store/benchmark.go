@@ -247,7 +247,11 @@ func (r *RedisStore) RecordRuns(ctx context.Context, benchID string, runs []type
 	for _, run := range runs {
 		runKey := r.makeBenchmarkRunKey(benchID, run.Registry, run.Version)
 
-		p.HSet(ctx, runKey, run.SanitizedMetrics())
+		// Clear any previously recorded run so re-recording the same
+		// registry+version replaces its metrics instead of merging with
+		// stale fields left over from an earlier run.
+		p.Del(ctx, runKey)
+
 		p.HSet(ctx, runKey, map[string]any{
 			"Registry":  run.Registry,
 			"Version":   run.Version,
@@ -255,6 +259,18 @@ func (r *RedisStore) RecordRuns(ctx context.Context, benchID string, runs []type
 			"Start":     run.Start,
 			"End":       run.End,
 		})
+
+		metrics := make(map[string]any, len(run.Metrics))
+		for k, metric := range run.SanitizedMetrics() {
+			metrics[k] = metric
+		}
+
+		// Redis rejects a HSET with zero field/value pairs, so skip it
+		// entirely for a run with no metrics rather than erroring out.
+		if len(metrics) > 0 {
+			p.HSet(ctx, runKey, metrics)
+		}
+
 		// set index
 		p.SAdd(ctx, indexKey, runKey)
 	}

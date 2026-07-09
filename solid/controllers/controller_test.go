@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -165,6 +166,179 @@ func TestModelRegistryFlow(t *testing.T) {
 		assert.Equal(t, 1, registry.LastModel().Version)
 		assert.Equal(t, true, registry.BenchmarkGpuPassthrough)
 		assert.Equal(t, dockerImage, registry.BenchmarkImage)
+	})
+}
+
+// findRun returns the run matching registry+version from a slice pulled from the store.
+func findRun(runs []*types.BenchRun, registry string, version int64) *types.BenchRun {
+	for _, r := range runs {
+		if r.Registry == registry && r.Version == version {
+			return r
+		}
+	}
+
+	return nil
+}
+
+func TestRecordRuns(t *testing.T) {
+	t.Parallel()
+
+	controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
+
+	bench := types.Bench{ //nolint: exhaustruct
+		Name:        "record-runs-bench",
+		Registries:  []string{"dummy-registry", "shadow-registry"},
+		Metrics:     []types.BenchMetric{{Name: "mae"}, {Name: "loss"}},
+		DatasetName: "dummy-dataset",
+		DatasetURL:  "https://example.com/dataset.zip",
+		Timestamp:   time.Now(),
+	}
+
+	benchID, created, err := controller.CreateBenchmark(t.Context(), bench)
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	t.Run("multiple_runs_across_registries_and_versions_are_all_recorded", func(t *testing.T) {
+		runs := []types.BenchRun{
+			{
+				Registry: "dummy-registry", Version: 1,
+				Metrics:   map[string]float32{"mae": 92.0, "loss": 0.0023},
+				Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+			},
+			{
+				Registry: "dummy-registry", Version: 2,
+				Metrics:   map[string]float32{"mae": 88.5, "loss": 0.0011},
+				Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+			},
+			{
+				Registry: "shadow-registry", Version: 1,
+				Metrics:   map[string]float32{"mae": 100.2, "loss": 0.05},
+				Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+			},
+		}
+
+		err := controller.RecordRuns(t.Context(), benchID, runs)
+		require.NoError(t, err)
+
+		got, err := controller.BenchmarkRuns(t.Context(), benchID)
+		require.NoError(t, err)
+
+		for _, want := range runs {
+			run := findRun(got, want.Registry, want.Version)
+			require.NotNilf(t, run, "missing run %s:%d", want.Registry, want.Version)
+			assert.InDeltaf(t, want.Metrics["mae"], run.Metrics["mae"], 1e-3, "%s:%d mae", want.Registry, want.Version)
+			assert.InDeltaf(t, want.Metrics["loss"], run.Metrics["loss"], 1e-4, "%s:%d loss", want.Registry, want.Version)
+		}
+	})
+
+	t.Run("metrics_not_declared_on_the_benchmark_are_still_recorded", func(t *testing.T) {
+		// RecordRuns accepts whatever metrics a run reports, even ones not
+		// (yet) part of the benchmark's declared Metrics list ("mae", "loss"
+		// here). That way a run already carries a value once a matching
+		// metric is later added to the benchmark.
+		const registry, version = "undeclared-metric-registry", 1
+
+		err := controller.RecordRuns(t.Context(), benchID, []types.BenchRun{{
+			Registry:  registry,
+			Version:   version,
+			Metrics:   map[string]float32{"gpu_mem_gb": 14.2},
+			Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+		}})
+		require.NoError(t, err)
+
+		got, err := controller.BenchmarkRuns(t.Context(), benchID)
+		require.NoError(t, err)
+
+		run := findRun(got, registry, version)
+		require.NotNil(t, run)
+		assert.InDelta(t, 14.2, run.Metrics["gpu_mem_gb"], 1e-6)
+	})
+
+	t.Run("recording_runs_for_an_unknown_benchmark_returns_not_found", func(t *testing.T) {
+		err := controller.RecordRuns(t.Context(), "unknown-benchmark-id", []types.BenchRun{{
+			Registry:  "dummy-registry",
+			Version:   1,
+			Metrics:   map[string]float32{"mae": 1},
+			Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+		}})
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, types.ErrNotFound))
+	})
+
+	t.Run("re-recording_same_registry_and_version_replaces_previous_metrics", func(t *testing.T) {
+		// Special case: RecordRuns clears any previous run sharing the same
+		// registry+version before writing, so a metric dropped between two
+		// runs of the same version disappears instead of leaving a stale value.
+		const registry, version = "merge-registry", 1
+
+		err := controller.RecordRuns(t.Context(), benchID, []types.BenchRun{{
+			Registry:  registry,
+			Version:   version,
+			Metrics:   map[string]float32{"mae": 10, "loss": 20, "extra": 30},
+			Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+		}})
+		require.NoError(t, err)
+
+		err = controller.RecordRuns(t.Context(), benchID, []types.BenchRun{{
+			Registry:  registry,
+			Version:   version,
+			Metrics:   map[string]float32{"mae": 99},
+			Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+		}})
+		require.NoError(t, err)
+
+		got, err := controller.BenchmarkRuns(t.Context(), benchID)
+		require.NoError(t, err)
+
+		run := findRun(got, registry, version)
+		require.NotNil(t, run)
+
+		assert.InDelta(t, 99, run.Metrics["mae"], 1e-6)
+		// fields from the first write no longer leak into the second.
+		assert.NotContains(t, run.Metrics, "loss")
+		assert.NotContains(t, run.Metrics, "extra")
+	})
+
+	t.Run("metric_names_are_sanitized", func(t *testing.T) {
+		const registry, version = "sanitize-registry", 1
+
+		err := controller.RecordRuns(t.Context(), benchID, []types.BenchRun{{
+			Registry:  registry,
+			Version:   version,
+			Metrics:   map[string]float32{"  Mean Absolute Error ": 1.23},
+			Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+		}})
+		require.NoError(t, err)
+
+		got, err := controller.BenchmarkRuns(t.Context(), benchID)
+		require.NoError(t, err)
+
+		run := findRun(got, registry, version)
+		require.NotNil(t, run)
+		assert.InDelta(t, 1.23, run.Metrics["mean-absolute-error"], 1e-6)
+	})
+
+	t.Run("run_with_no_metrics_is_recorded_without_error", func(t *testing.T) {
+		// Special case: an empty Metrics map used to turn into an HSET with
+		// zero field/value pairs, which Redis rejects. RecordRuns now skips
+		// the metrics HSET entirely when there are none, so the run is
+		// still recorded (with an empty metric set) and no error is returned.
+		const registry, version = "empty-metrics-registry", 1
+
+		err := controller.RecordRuns(t.Context(), benchID, []types.BenchRun{{
+			Registry:  registry,
+			Version:   version,
+			Metrics:   map[string]float32{},
+			Timestamp: time.Now(), Start: time.Now(), End: time.Now(),
+		}})
+		require.NoError(t, err)
+
+		got, err := controller.BenchmarkRuns(t.Context(), benchID)
+		require.NoError(t, err)
+
+		run := findRun(got, registry, version)
+		require.NotNilf(t, run, "run metadata should be recorded even with no metrics")
+		assert.Empty(t, run.Metrics)
 	})
 }
 

@@ -101,6 +101,26 @@ func (c *Controller) BenchmarkRuns(ctx context.Context, benchID string) ([]*type
 	return runs, nil
 }
 
+// RecordRuns records new benchmark runs. All metrics reported by a run are
+// stored as-is, including ones not (yet) declared on the benchmark, so a run
+// already carries a value once a matching metric is added to the benchmark.
+func (c *Controller) RecordRuns(ctx context.Context, benchID string, runs []types.BenchRun) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
+	if err != nil {
+		return fmt.Errorf("%w: checking if benchmark is present failed: %w", types.ErrInternal, err)
+	}
+
+	if !exists {
+		return fmt.Errorf("%w: benchmark does not exist", types.ErrNotFound)
+	}
+
+	if err := c.Redis.RecordRuns(ctx, benchID, runs); err != nil {
+		return fmt.Errorf("%w: could not record benchmark runs: %w", types.ErrInternal, err)
+	}
+
+	return nil
+}
+
 // Benchmarks pulls all known benchmark names.
 func (c *Controller) Benchmarks(ctx context.Context) ([]string, error) {
 	benchs, err := c.Redis.Benchmarks(ctx)
