@@ -41,6 +41,7 @@ type Engine struct {
 	recorder         RunRecorder
 	sub              *pubgo.Subscription
 	s3               s3.ObjectStore
+	cli              *client.Client
 	registryUsername string
 	registryPassword string
 	rootDest         string
@@ -143,7 +144,7 @@ func New(sub *pubgo.Subscription, opts ...Opts) *Engine {
 		Str("component", "bENGINE").
 		Timestamp().Logger()
 
-	return &Engine{
+	return &Engine{ //nolint: exhaustruct
 		recorder:         cfg.Recorder,
 		sub:              sub,
 		s3:               cfg.S3,
@@ -157,8 +158,7 @@ func New(sub *pubgo.Subscription, opts ...Opts) *Engine {
 
 // Start starts the engine instance.
 func (e *Engine) Start(ctx context.Context) {
-	cli, err := client.New(client.FromEnv)
-	if err != nil {
+	if _, err := e.dockerClient(); err != nil {
 		e.l.Error().Err(err).Msg("could not setup docker client")
 
 		return
@@ -191,7 +191,7 @@ func (e *Engine) Start(ctx context.Context) {
 				Str("tag", event.Tag).
 				Msg("received benchmark event")
 
-			err := e.ConsumeEvent(ctx, cli, event)
+			err := e.ConsumeEvent(ctx, event)
 			if err != nil {
 				e.l.Error().Err(err).Msg("could not run benchmark")
 			}
@@ -203,8 +203,8 @@ func (e *Engine) Start(ctx context.Context) {
 }
 
 // ConsumeEvent handles a benchmarking event.
-func (e *Engine) ConsumeEvent(ctx context.Context, cli *client.Client, event *types.BenchEvent) error {
-	err := e.pullImage(ctx, cli, event.DockerImage)
+func (e *Engine) ConsumeEvent(ctx context.Context, event *types.BenchEvent) error {
+	err := e.pullImage(ctx, event.DockerImage)
 	if err != nil {
 		e.l.Error().Err(err).Msg("could not pull docker image")
 
@@ -298,15 +298,23 @@ func (e *Engine) PullDataset(ctx context.Context, url string, outputPath string,
 }
 
 // RunContainer runs a benchmark on a container with a specified image, dataset, and checkpoint.
-func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPath, checkpointPath string,
+func (e *Engine) RunContainer(
+	ctx context.Context, image, datasetName, datasetPath, checkpointPath string,
 ) (string, error) {
 	outputPath := "/run/output.json"
 
-	gpuOpts := opts.GpuOpts{}
+	var deviceRequests []container.DeviceRequest
 
-	err := gpuOpts.Set("all")
-	if err != nil {
-		return "", errors.New("could not set GpuOpts")
+	if e.hasGPUSupport(ctx) {
+		gpuOpts := opts.GpuOpts{}
+
+		if err := gpuOpts.Set("all"); err != nil {
+			return "", errors.New("could not set GpuOpts")
+		}
+
+		deviceRequests = gpuOpts.Value()
+	} else {
+		e.l.Warn().Msg("no GPU device driver detected on docker host, running container without GPU")
 	}
 
 	e.l.Info().
@@ -336,7 +344,7 @@ func (e *Engine) RunContainer(ctx context.Context, image, datasetName, datasetPa
 				{Type: mount.TypeBind, Source: source, Target: target, ReadOnly: true}, //nolint: exhaustruct
 			}
 			hostConfig.Resources = container.Resources{ //nolint: exhaustruct
-				DeviceRequests: gpuOpts.Value(),
+				DeviceRequests: deviceRequests,
 			}
 		}),
 	)
@@ -442,7 +450,49 @@ func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, start, 
 	return nil
 }
 
-func (e *Engine) pullImage(ctx context.Context, cli *client.Client, image string) error {
+// dockerClient returns the engine's docker client, lazily creating it on
+// first use so callers never need to pass one around explicitly.
+func (e *Engine) dockerClient() (*client.Client, error) {
+	if e.cli != nil {
+		return e.cli, nil
+	}
+
+	cli, err := client.New(client.FromEnv)
+	if err != nil {
+		return nil, fmt.Errorf("could not setup docker client: %w", err)
+	}
+
+	e.cli = cli
+
+	return e.cli, nil
+}
+
+// hasGPUSupport reports whether the docker daemon has a GPU device driver
+// (e.g. the NVIDIA container toolkit) registered. When it doesn't, requesting
+// GPU device capabilities fails the container with:
+// "could not select device driver "" with capabilities: [[gpu]]".
+func (e *Engine) hasGPUSupport(ctx context.Context) bool {
+	cli, err := e.dockerClient()
+	if err != nil {
+		return false
+	}
+
+	info, err := cli.Info(ctx, client.InfoOptions{})
+	if err != nil {
+		return false
+	}
+
+	_, ok := info.Info.Runtimes["nvidia"]
+
+	return ok
+}
+
+func (e *Engine) pullImage(ctx context.Context, image string) error {
+	cli, err := e.dockerClient()
+	if err != nil {
+		return err
+	}
+
 	opts := client.ImagePullOptions{} //nolint: exhaustruct
 
 	if e.registryUsername != "" {
@@ -457,7 +507,7 @@ func (e *Engine) pullImage(ctx context.Context, cli *client.Client, image string
 		}
 	}
 
-	_, err := cli.ImagePull(ctx, image, opts)
+	_, err = cli.ImagePull(ctx, image, opts)
 	if err != nil {
 		return fmt.Errorf("could not pull image: %w", err)
 	}
