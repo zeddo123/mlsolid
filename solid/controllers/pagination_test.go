@@ -4,6 +4,7 @@ package controllers_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -29,6 +30,7 @@ func TestBenchmarksPage(t *testing.T) {
 			Metrics:     []types.BenchMetric{{Name: "metric", DescSort: false}},
 			DatasetName: "dataset",
 			DatasetURL:  "https://example.com/dataset",
+			Timestamp:   time.Now(),
 		})
 		require.NoError(t, err)
 
