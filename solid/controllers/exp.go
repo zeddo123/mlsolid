@@ -28,6 +28,12 @@ func (c *Controller) Exps(ctx context.Context) ([]string, error) {
 	return c.Redis.Exps(ctx)
 }
 
+// ExpsPage returns a single page of experiment ids starting at cursor.
+// A returned cursor of 0 means there are no more pages.
+func (c *Controller) ExpsPage(ctx context.Context, cursor uint64, limit int64) ([]string, uint64, error) {
+	return c.Redis.ExpsPage(ctx, cursor, limit)
+}
+
 // ExpInfo returns info data linked to an experiment (description, etc).
 func (c *Controller) ExpInfo(ctx context.Context, expID string) (types.ExperimentInfo, error) {
 	info, err := c.Redis.ExpInfo(ctx, expID)

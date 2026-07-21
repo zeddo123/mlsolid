@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/zeddo123/mlsolid/solid/types"
 )
@@ -8,7 +10,14 @@ import (
 func experiments(ctx *fiber.Ctx) error {
 	ctrl := ctxController(ctx)
 
-	exps, err := ctrl.Exps(ctx.Context())
+	cursor, limit, err := parsePagination(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	exps, next, err := ctrl.ExpsPage(ctx.Context(), cursor, limit)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error: "could not retrieve experiments",
@@ -29,6 +38,7 @@ func experiments(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(ExperimentsResponse{
 		Details: "successfully retrieved exps",
 		Exps:    overview,
+		Cursor:  strconv.FormatUint(next, 10),
 	})
 }
 

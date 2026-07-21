@@ -4,14 +4,75 @@ info:
   title: mlsolid REST API
   description: REST API allowing users to interact with mlsolid.
 
+security:
+  - sessionCookie: []
+
 paths:
   /login/{provider}:
+    get:
+      description: start the OAuth login flow for the given provider
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          description: OAuth provider name (e.g. github, google)
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: redirect to the OAuth provider's consent screen
+
+  /auth/callback/{provider}:
+    get:
+      description: OAuth callback completing authentication and starting a session
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          description: OAuth provider name (e.g. github, google)
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: authentication successful, redirected back to the frontend
+        '401':
+          description: authentication failed or user not allowed to access the resource
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: session could not be created
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /logout:
+    get:
+      description: log the current user out and destroy their session
+      security: []
+      responses:
+        '200':
+          description: logged out successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: could not log out user or clear session
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /authorize:
     get:
       description: genereate API key for gRPC endpoints
       responses:
-        200:
+        '200':
           description: API generated successfully
           content:
             application/json:
@@ -22,7 +83,8 @@ paths:
                 properties:
                   api-key:
                     type: string
-        500:
+        '500':
+          description: could not generate api key
           content:
             application/json:
               schema:
@@ -32,7 +94,8 @@ paths:
     get:
       description: check if user is authorized
       responses:
-        200:
+        '200':
+          description: user is authorized
           content:
             application/json:
               schema:
@@ -42,7 +105,8 @@ paths:
                 properties:
                   authorized:
                     type: boolean
-        401:
+        '401':
+          description: user is not authorized
           content:
             application/json:
               schema:
@@ -52,7 +116,8 @@ paths:
                 properties:
                   authorized:
                     type: boolean
-        500:
+        '500':
+          description: could not determine authorization status
           content:
             application/json:
               schema:
@@ -60,15 +125,24 @@ paths:
 
   /v1/exps:
     get:
-      description: retrieve all experiment with a list of their runs.
+      description: retrieve a page of experiments with a list of their runs.
+      parameters:
+        - $ref: '#/components/parameters/PaginationCursor'
+        - $ref: '#/components/parameters/PaginationLimit'
       responses:
-        200:
+        '200':
           description: successfully retrieved experiments
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentsResponse'
-        500:
+        '400':
+          description: bad cursor or limit query param
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
           description: could not retrieve experiments
           content:
             application/json:
@@ -86,19 +160,19 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: retrieved experiment successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentResponse'
-        404:
+        '404':
           description: could not find experiment runs
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not retrieve experiment data
           content:
             application/json:
@@ -116,13 +190,13 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: retrieved metrics successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentMetricsResponse'
-        500:
+        '500':
           description: could not retrieve metrics
           content:
             application/json:
@@ -146,19 +220,19 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: retrieved metric successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentMetricResponse'
-        404:
+        '404':
           description: could not find metrics
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not retrieve metric
           content:
             application/json:
@@ -176,19 +250,19 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: retrieved artifacts successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentArtifactsResponse'
-        404:
+        '404':
           description: could not find resource
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not retrieve artifacts
           content:
             application/json:
@@ -212,20 +286,20 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: requested artifact file
           content:
             application/octet-stream:
               schema:
                 type: string
                 format: binary
-        404:
+        '404':
           description: could not find resource
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not retrieve resource
           content:
             application/json:
@@ -234,15 +308,24 @@ paths:
 
   /v1/registries:
     get:
-      description: retrieve all registry names
+      description: retrieve a page of registry names
+      parameters:
+        - $ref: '#/components/parameters/PaginationCursor'
+        - $ref: '#/components/parameters/PaginationLimit'
       responses:
-        200:
+        '200':
           description: retrieved registries successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegistriesResponse'
-        500:
+        '400':
+          description: bad cursor or limit query param
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
           description: could not retrieve resource
           content:
             application/json:
@@ -259,19 +342,19 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateRegistryRequest'
       responses:
-        201:
+        '201':
           description: model registry created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateRegistryResponse'
-        400:
+        '400':
           description: could not create model registry due to bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not retrieve resource
           content:
             application/json:
@@ -289,19 +372,19 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: retrieved model registry successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegistryResponse'
-        404:
+        '404':
           description: could not find resource
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not retrieve resource
           content:
             application/json:
@@ -311,15 +394,24 @@ paths:
         
   /v1/benchmarks:
     get:
-      description: retrieve list of benchmarks
+      description: retrieve a page of benchmarks
+      parameters:
+        - $ref: '#/components/parameters/PaginationCursor'
+        - $ref: '#/components/parameters/PaginationLimit'
       responses:
-        200:
+        '200':
           description: retrieved benchmarks successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BenchmarksResponse'
-        500:
+        '400':
+          description: bad cursor or limit query param
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
           description: could not retrieve artifacts
           content:
             application/json:
@@ -336,23 +428,26 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateBenchmarkRequest'
       responses:
-        201:
+        '201':
           description: benchmark created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateBenchmarkResponse'
-        400:
+        '400':
+          description: could not create benchmark due to bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        404:
+        '404':
+          description: could not find a referenced resource
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
+          description: could not create benchmark
           content:
             application/json:
               schema:
@@ -369,19 +464,19 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: retrieved benchmark successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BenchmarkResponse'
-        404:
+        '404':
           description: could not find benchmark
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not retrieve benchmark
           content:
             application/json:
@@ -405,25 +500,25 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: benchmark updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateBenchmarkResponse'
-        400:
+        '400':
           description: bad benchmark update request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        404:
+        '404':
           description: could not find benchmark
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not update benchmark
           content:
             application/json:
@@ -440,19 +535,19 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: benchmark deleted successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteBenchmarkResponse'
-        500:
+        '500':
           description: could not delete benchmark
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        501:
+        '501':
           description: method not implemented
           content:
             application/json:
@@ -470,25 +565,25 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: benchmark toggled
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BenchmarkToggleResponse'
-        400:
+        '400':
           description: bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        404:
+        '404':
           description: benchmark not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not toggle benchmark
           content:
             application/json:
@@ -506,19 +601,19 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: benchmark runs retrieved successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BenchmarkRunsResponse'
-        404:
+        '404':
           description: could not find benchmark
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: could not fetch benchmark runs
           content:
             application/json:
@@ -529,13 +624,13 @@ paths:
     get:
       description: retrieve all api key labels
       responses:
-        200:
+        '200':
           description: key labels retrieved successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/KeyLabelsResponse'
-        500:
+        '500':
           description: could not fetch api key labels
           content:
             application/json:
@@ -552,19 +647,19 @@ paths:
           schema:
             type: string
       responses:
-        201:
+        '201':
           description: api key created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/KeyResponse'
-        500:
+        '500':
           description: could not create api key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        400:
+        '400':
           description: bad request
           content:
             application/json:
@@ -588,30 +683,45 @@ paths:
             schema:
               $ref: '#/components/schemas/BestBenchmarkRequest'
       responses:
-        200:
+        '200':
           description: best benchmark retrieved successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BestBenchmarkResponse'
-        400:
+        '400':
+          description: bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        404:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        500:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
 
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: mlsolid
+      description: Session cookie set after a successful OAuth login, required by /authorize, /authorized and all /v1 endpoints.
+
+  parameters:
+    PaginationCursor:
+      name: cursor
+      in: query
+      description: Opaque pagination cursor from a previous response's `cursor` field. Omit or pass "0" to start from the beginning.
+      required: false
+      schema:
+        type: string
+        default: "0"
+    PaginationLimit:
+      name: limit
+      in: query
+      description: Maximum number of items to return in this page. This is a hint, not a guarantee of exact page size. Capped server-side at 200.
+      required: false
+      schema:
+        type: integer
+        default: 50
+
   schemas:
     CreateRegistryRequest:
       type: object
@@ -667,7 +777,6 @@ components:
         - metrics
         - datasetName
         - datasetURL
-        - datasetFromS3
 
     UpdateBenchmarkRequest:
       type: object
@@ -697,13 +806,14 @@ components:
       required:
         - details
         - exps
+        - cursor
       properties:
         details:
           type: string
           description: description of successful operation
         exps:
           type: object
-          description: Map of experiment ids to list of recorded run ids.
+          description: Map of experiment ids to list of recorded run ids, for the current page.
           additionalProperties:
             type: array
             items:
@@ -711,6 +821,9 @@ components:
           example:
             exp1: ["run#1", "run#2"]
             exp2: ["run#3"]
+        cursor:
+          type: string
+          description: Opaque cursor for the next page. "0" means there are no more results.
 
     ExperimentResponse:
       type: object
@@ -771,6 +884,7 @@ components:
           description: Map of run id to list of metric vals
           additionalProperties:
             type: array
+            items: {}
           example:
             run1: [1, 23, 342, 454]
             run2: ["34", "23", 342.0, 454]
@@ -801,6 +915,7 @@ components:
       required:
         - details
         - registries
+        - cursor
       properties:
         details:
           type: string
@@ -809,18 +924,53 @@ components:
           type: array
           items:
             type: string
+          description: registry ids for the current page
+        cursor:
+          type: string
+          description: Opaque cursor for the next page. "0" means there are no more results.
 
     RegistryResponse:
       type: object
       required:
         - details
-        - registry
+        - name
+        - lastVer
+        - tags
+        - createdAt
+        - entriesInfo
       properties:
         details:
           type: string
           description: description of successful operation
-        registry:
-          $ref: '#/components/schemas/Registry'
+        name:
+          type: string
+          description: Registry name
+        lastVer:
+          type: integer
+          format: int64
+          description: Last version number
+        tags:
+          type: object
+          description: Map of tag names to lists of integer version numbers
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        entriesInfo:
+          type: object
+          description: Map of model version numbers to their information
+          additionalProperties:
+            $ref: '#/components/schemas/EntryInfo'
+        benchmarkImage:
+          type: string
+          description: docker image for benchmarking
+        benchmarkGpuPassthrough:
+          type: boolean
+          description: enable/disable gpu passthrough when benchmarking
 
     CreateRegistryResponse:
       type: object
@@ -838,15 +988,21 @@ components:
       required:
         - details
         - benchmarks
+        - cursor
       properties:
         details:
           type: string
           description: description of successfully operation
         benchmarks:
-          type: array
-          items:
+          type: object
+          description: Map of benchmark id to benchmark name, for the current page.
+          additionalProperties:
             type: string
-          description: array of benchmark ids
+          example:
+            bench-123: performance-test-01
+        cursor:
+          type: string
+          description: Opaque cursor for the next page. "0" means there are no more results.
 
     CreateBenchmarkResponse:
       type: object
@@ -980,55 +1136,28 @@ components:
           type: string
           description: details on why operation was unsuccessful
 
-    Registry:
-      type: object
-      properties:
-        details:
-          type: string
-          description: Registry details
-        name:
-          type: string
-          description: Registry name
-        lastVer:
-          type: integer
-          format: int64
-          description: Last version number
-        tags:
-          type: object
-          description: Map of tag names to lists of integer IDs
-          additionalProperties:
-            type: array
-            items:
-              type: integer
-        createdAt:
-          type: string
-          format: date-time
-          description: Creation timestamp
-        entriesInfo:
-          type: object
-          description: Map of entry IDs to their information
-          additionalProperties:
-            $ref: '#/components/schemas/EntryInfo'
-        benchmarkImage:
-          type: string
-          description: docker image for benchmarking
-        benchmarkGpuPassthrough:
-          type: boolean
-          description: enable/disable gpu passthrough when benchmarking
-      required:
-        - details
-        - name
-        - lastVer
-        - tags
-        - createdAt
-        - entriesInfo
-
     EntryInfo:
       type: object
       description: model entry information
+      required:
+        - createdAt
+        - tags
+        - name
+        - run
       properties:
         createdAt:
           type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        name:
+          type: string
+          description: name of the artifact the model entry was created from
+        run:
+          type: string
+          description: id of the run the model entry was created from
 
     Bench:
       type: object
@@ -1093,7 +1222,6 @@ components:
       required:
         - id
         - name
-        - tag
         - registries
         - metrics
         - datasetName
@@ -1136,3 +1264,11 @@ components:
           format: date-time
           description: Run timestamp
           example: "2025-05-08T14:30:00Z"
+        start:
+          type: string
+          format: date-time
+          description: Time the benchmark run started
+        end:
+          type: string
+          format: date-time
+          description: Time the benchmark run ended

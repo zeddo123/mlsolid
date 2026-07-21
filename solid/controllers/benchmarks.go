@@ -121,7 +121,7 @@ func (c *Controller) RecordRuns(ctx context.Context, benchID string, runs []type
 	return nil
 }
 
-// Benchmarks pulls all known benchmark names.
+// Benchmarks pulls all known benchmark ids.
 func (c *Controller) Benchmarks(ctx context.Context) ([]string, error) {
 	benchs, err := c.Redis.Benchmarks(ctx)
 	if err != nil {
@@ -129,6 +129,39 @@ func (c *Controller) Benchmarks(ctx context.Context) ([]string, error) {
 	}
 
 	return benchs, nil
+}
+
+// BenchmarkNames pulls a map of benchmark id to benchmark name for all known benchmarks.
+func (c *Controller) BenchmarkNames(ctx context.Context) (map[string]string, error) {
+	ids, err := c.Redis.Benchmarks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed pulling benchmarks: %w", err)
+	}
+
+	names, err := c.Redis.BenchmarkNames(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("failed pulling benchmark names: %w", err)
+	}
+
+	return names, nil
+}
+
+// BenchmarksPage pulls a single page of benchmark id to benchmark name, starting at cursor.
+// A returned cursor of 0 means there are no more pages.
+func (c *Controller) BenchmarksPage(ctx context.Context,
+	cursor uint64, limit int64,
+) (map[string]string, uint64, error) {
+	ids, next, err := c.Redis.BenchmarksPage(ctx, cursor, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed pulling benchmarks page: %w", err)
+	}
+
+	names, err := c.Redis.BenchmarkNames(ctx, ids)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed pulling benchmark names: %w", err)
+	}
+
+	return names, next, nil
 }
 
 // RegistryBenchmarks pulls all benchmarks linked to a registry.

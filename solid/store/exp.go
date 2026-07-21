@@ -75,6 +75,21 @@ func (r *RedisStore) Exps(ctx context.Context) ([]string, error) {
 		return nil, types.NewInternalErr("could not fetch experiments")
 	}
 
+	return parseExpIDs(keys), nil
+}
+
+// ExpsPage returns a single page of experiment ids starting at cursor.
+// A returned cursor of 0 means there are no more pages.
+func (r *RedisStore) ExpsPage(ctx context.Context, cursor uint64, count int64) ([]string, uint64, error) {
+	keys, next, err := r.scanKeysPage(ctx, "exp:*", cursor, count)
+	if err != nil {
+		return nil, 0, types.NewInternalErr("could not fetch experiments")
+	}
+
+	return parseExpIDs(keys), next, nil
+}
+
+func parseExpIDs(keys []string) []string {
 	ids := make([]string, len(keys))
 
 	for i, key := range keys {
@@ -86,7 +101,7 @@ func (r *RedisStore) Exps(ctx context.Context) ([]string, error) {
 		}
 	}
 
-	return ids, nil
+	return ids
 }
 
 // ExpInfo pulls an experiment's info data.
