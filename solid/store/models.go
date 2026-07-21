@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -39,6 +38,11 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 	infoKey := r.makeModelRegistryInfoKey(m.Name)
 	entriesKey := r.makeModelRegistryKey(m.Name)
 	tagsIndexKey := r.makeModelRegistryTagsKey(m.Name)
+
+	// Registering the registry name in the index, regardless of whether it has any
+	// model entries yet (the "registry:<name>" list key below is only created once a
+	// model entry is pushed to it).
+	p.SAdd(ctx, ModelRegistriesKey, m.Name)
 
 	// Setting model info under key "info:registry:<name>"
 	p.HSet(ctx, infoKey, map[string]string{
@@ -387,46 +391,38 @@ func (r *RedisStore) UpdateRegistryBenchmarkGpuPassthrough(ctx context.Context, 
 
 // ModelRegistriesID returns a slice of all known registry ids.
 func (r *RedisStore) ModelRegistriesID(ctx context.Context) ([]string, error) {
-	keys, err := r.scanKeys(ctx, ModelRegistryMatchPattern)
+	names, err := r.Client.SMembers(ctx, ModelRegistriesKey).Result()
 	if err != nil {
 		return nil, fmt.Errorf("could query redis keys: %w", err)
 	}
 
-	for i := range keys {
-		keys[i], _ = strings.CutPrefix(keys[i], "registry:")
-	}
-
-	return keys, nil
+	return names, nil
 }
 
 // ModelRegistriesIDPage returns a single page of registry ids starting at cursor.
 // A returned cursor of 0 means there are no more pages.
 func (r *RedisStore) ModelRegistriesIDPage(ctx context.Context, cursor uint64, count int64) ([]string, uint64, error) {
-	keys, next, err := r.scanKeysPage(ctx, ModelRegistryMatchPattern, cursor, count)
+	names, next, err := r.Client.SScan(ctx, ModelRegistriesKey, cursor, "", count).Result()
 	if err != nil {
 		return nil, 0, fmt.Errorf("could query redis keys: %w", err)
 	}
 
-	for i := range keys {
-		keys[i], _ = strings.CutPrefix(keys[i], "registry:")
-	}
-
-	return keys, next, nil
+	return names, next, nil
 }
 
 // ModelRegistries returns a slice of all known registries.
 func (r *RedisStore) ModelRegistries(ctx context.Context) ([]*types.ModelRegistry, error) {
-	keys, err := r.scanKeys(ctx, ModelRegistryMatchPattern)
+	names, err := r.Client.SMembers(ctx, ModelRegistriesKey).Result()
 	if err != nil {
-		return nil, fmt.Errorf("could not pull registry keys: %w", err)
+		return nil, fmt.Errorf("could not pull registry names: %w", err)
 	}
 
 	var wg sync.WaitGroup
 
-	registries := make([]*types.ModelRegistry, len(keys))
+	registries := make([]*types.ModelRegistry, len(names))
 
-	for i := range keys {
-		id, _ := strings.CutPrefix(keys[i], "registry:")
+	for i := range names {
+		id := names[i]
 
 		// TODO: optimize model registry by using redis transactions.
 		wg.Go(func() {

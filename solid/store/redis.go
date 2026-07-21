@@ -46,8 +46,11 @@ const (
 	// registry:yolov12 maps to a list of model entries
 	ModelRegistryKeyPattern = "registry:%s"
 
-	// ModelRegistryMatchPattern match pattern for all model registries.
-	ModelRegistryMatchPattern = "registry:*"
+	// ModelRegistriesKey is an index (Set) of all known registry names. Populated on
+	// registry creation regardless of whether it has any model entries yet, since a
+	// registry's "registry:<name>" list key (ModelRegistryKeyPattern) only comes into
+	// existence once the first model entry is pushed to it.
+	ModelRegistriesKey = "index:registries"
 
 	// ModelRegistryTagsKeyPattern pattern a model registry's tags
 	// Example
