@@ -11,7 +11,14 @@ import (
 func benchmarks(c *fiber.Ctx) error {
 	ctrl := ctxController(c)
 
-	benchmarks, err := ctrl.Benchmarks(c.Context())
+	cursor, limit, err := parsePagination(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{ //nolint: wrapcheck
+			Error: err.Error(),
+		})
+	}
+
+	benchmarks, next, err := ctrl.BenchmarksPage(c.Context(), cursor, limit)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{ //nolint: wrapcheck
 			Error: err.Error(),
@@ -20,6 +27,7 @@ func benchmarks(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(BenchmarksResponse{ //nolint: wrapcheck
 		Benchmarks: benchmarks,
+		Cursor:     strconv.FormatUint(next, 10),
 		Details:    "benchmarks retrieved successfully",
 	})
 }

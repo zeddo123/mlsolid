@@ -195,3 +195,16 @@ func (r *RedisStore) scanKeys(ctx context.Context, pattern string) ([]string, er
 
 	return keys, nil
 }
+
+// scanKeysPage returns a single page of keys matching pattern, starting at cursor.
+// A returned cursor of 0 means the scan is complete.
+func (r *RedisStore) scanKeysPage(ctx context.Context, pattern string,
+	cursor uint64, count int64,
+) ([]string, uint64, error) {
+	keys, next, err := r.Client.Scan(ctx, cursor, pattern, count).Result()
+	if err != nil {
+		return nil, 0, types.NewInternalErr("could not retrieve keys")
+	}
+
+	return keys, next, nil
+}

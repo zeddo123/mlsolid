@@ -399,6 +399,21 @@ func (r *RedisStore) ModelRegistriesID(ctx context.Context) ([]string, error) {
 	return keys, nil
 }
 
+// ModelRegistriesIDPage returns a single page of registry ids starting at cursor.
+// A returned cursor of 0 means there are no more pages.
+func (r *RedisStore) ModelRegistriesIDPage(ctx context.Context, cursor uint64, count int64) ([]string, uint64, error) {
+	keys, next, err := r.scanKeysPage(ctx, ModelRegistryMatchPattern, cursor, count)
+	if err != nil {
+		return nil, 0, fmt.Errorf("could query redis keys: %w", err)
+	}
+
+	for i := range keys {
+		keys[i], _ = strings.CutPrefix(keys[i], "registry:")
+	}
+
+	return keys, next, nil
+}
+
 // ModelRegistries returns a slice of all known registries.
 func (r *RedisStore) ModelRegistries(ctx context.Context) ([]*types.ModelRegistry, error) {
 	keys, err := r.scanKeys(ctx, ModelRegistryMatchPattern)

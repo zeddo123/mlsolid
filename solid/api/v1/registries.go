@@ -2,6 +2,7 @@ package v1
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -10,7 +11,14 @@ import (
 func registries(ctx *fiber.Ctx) error {
 	ctrl := ctxController(ctx)
 
-	registries, err := ctrl.ModelRegistriesID(ctx.Context())
+	cursor, limit, err := parsePagination(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	registries, next, err := ctrl.ModelRegistriesIDPage(ctx.Context(), cursor, limit)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error: err.Error(),
@@ -19,6 +27,7 @@ func registries(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusOK).JSON(RegistriesResponse{
 		Registries: registries,
+		Cursor:     strconv.FormatUint(next, 10),
 		Details:    "registries retrieved successfully",
 	})
 }

@@ -22,6 +22,7 @@ type ExperimentResponse struct {
 type ExperimentsResponse struct {
 	Details string              `json:"details"`
 	Exps    map[string][]string `json:"exps"`
+	Cursor  string              `json:"cursor"`
 }
 
 type runInfo struct {
@@ -53,6 +54,7 @@ type entryInfo struct {
 type RegistriesResponse struct {
 	Details    string   `json:"details"`
 	Registries []string `json:"registries"`
+	Cursor     string   `json:"cursor"`
 }
 
 // CreateRegistryRequest payload to create a new registry model.
@@ -70,8 +72,9 @@ type CreateRegistryResponse struct {
 
 // BenchmarksResponse response returned for Benchmarks endpoint.
 type BenchmarksResponse struct {
-	Details    string   `json:"details"`
-	Benchmarks []string `json:"benchmarks"`
+	Details    string            `json:"details"`
+	Benchmarks map[string]string `json:"benchmarks"`
+	Cursor     string            `json:"cursor"`
 }
 
 // BenchmarkResponse response returned for Benchmark endpoint.

@@ -39,7 +39,7 @@ func artifacts(ctx *fiber.Ctx) error {
 
 func artifact(ctx *fiber.Ctx) error {
 	ctrl := ctxController(ctx)
-	runID := ctx.Params("id")
+	runID := ctx.Params("rid")
 	artifactID := ctx.Params("aid")
 
 	artifact, body, err := ctrl.Artifact(ctx.Context(), runID, artifactID)

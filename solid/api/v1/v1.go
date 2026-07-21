@@ -1,8 +1,16 @@
 package v1
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/zeddo123/mlsolid/solid/controllers"
+)
+
+const (
+	defaultPageLimit = 50
+	maxPageLimit     = 200
 )
 
 func ctxController(ctx *fiber.Ctx) *controllers.Controller {
@@ -13,6 +21,26 @@ func ctxController(ctx *fiber.Ctx) *controllers.Controller {
 	}
 
 	panic("no controller found in ctx")
+}
+
+// parsePagination parses the cursor and limit query params shared by paginated list endpoints.
+// cursor defaults to 0 (start) and limit defaults to defaultPageLimit, capped at maxPageLimit.
+func parsePagination(c *fiber.Ctx) (cursor uint64, limit int64, err error) {
+	cursor, err = strconv.ParseUint(c.Query("cursor", "0"), 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("cursor query param is malformed")
+	}
+
+	limit = int64(c.QueryInt("limit", defaultPageLimit))
+	if limit <= 0 {
+		return 0, 0, errors.New("limit query param must be positive")
+	}
+
+	if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
+
+	return cursor, limit, nil
 }
 
 // BuildRoutes builds v1 endpoint routes.

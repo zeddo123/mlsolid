@@ -344,6 +344,39 @@ func (r *RedisStore) Benchmarks(ctx context.Context) ([]string, error) {
 	return benchs, nil
 }
 
+// BenchmarksPage returns a single page of benchmark ids starting at cursor.
+// A returned cursor of 0 means there are no more pages.
+func (r *RedisStore) BenchmarksPage(ctx context.Context, cursor uint64, count int64) ([]string, uint64, error) {
+	ids, next, err := r.Client.SScan(ctx, BenchmarksKey, cursor, "", count).Result()
+	if err != nil {
+		return nil, 0, fmt.Errorf("%w: could not pull benchmarks page: %w", types.ErrInternal, err)
+	}
+
+	return ids, next, nil
+}
+
+// BenchmarkNames returns a map of benchmark id to benchmark name for the given ids.
+func (r *RedisStore) BenchmarkNames(ctx context.Context, ids []string) (map[string]string, error) {
+	p := r.Client.Pipeline()
+
+	cmds := make(map[string]*redis.MapStringStringCmd, len(ids))
+	for _, id := range ids {
+		cmds[id] = p.HGetAll(ctx, r.makeBenchmarkKey(id))
+	}
+
+	_, err := p.Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w: could not pull benchmark names: %w", types.ErrInternal, err)
+	}
+
+	names := make(map[string]string, len(ids))
+	for id, cmd := range cmds {
+		names[id] = cmd.Val()["Name"]
+	}
+
+	return names, nil
+}
+
 // BenchmarksWithIDs returns all benchmarks with specified ids without checking if they exist in the store.
 func (r *RedisStore) BenchmarksWithIDs(ctx context.Context, ids []string) ([]*types.Bench, error) {
 	type tempResult struct {

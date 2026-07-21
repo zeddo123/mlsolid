@@ -134,6 +134,17 @@ func (c *Controller) ModelRegistriesID(ctx context.Context) ([]string, error) {
 	return ids, nil
 }
 
+// ModelRegistriesIDPage retrieves a single page of model registry ids starting at cursor.
+// A returned cursor of 0 means there are no more pages.
+func (c *Controller) ModelRegistriesIDPage(ctx context.Context, cursor uint64, limit int64) ([]string, uint64, error) {
+	ids, next, err := c.Redis.ModelRegistriesIDPage(ctx, cursor, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("could not pull registry ids page: %w", err)
+	}
+
+	return ids, next, nil
+}
+
 // UpdateRegistryDockerImage updates the docker image of a registry.
 func (c *Controller) UpdateRegistryDockerImage(ctx context.Context, registry, dockerImage string) error {
 	err := c.Redis.UpdateRegistryDockerImage(ctx, registry, dockerImage)
