@@ -13,10 +13,6 @@ import (
 )
 
 func (c *Controller) CreateRun(ctx context.Context, run types.Run) error {
-	if c.S3 == nil {
-		return types.NewInternalErr("object store is not configured")
-	}
-
 	ok, err := c.Redis.RunExists(ctx, run.Name)
 	if err != nil {
 		return err
@@ -31,17 +27,25 @@ func (c *Controller) CreateRun(ctx context.Context, run types.Run) error {
 		return err
 	}
 
-	artifacts, uploaderr := c.S3.UploadArtifacts(ctx, run.ArtifactsSlice())
-	if uploaderr != nil {
-		log.Println("not all artifacts were uploaded", uploaderr)
+	if len(run.Artifacts) > 0 {
+		if c.S3 == nil {
+			return types.NewInternalErr("object store is not configured")
+		}
+
+		artifacts, uploaderr := c.S3.UploadArtifacts(ctx, run.ArtifactsSlice())
+		if uploaderr != nil {
+			log.Println("not all artifacts were uploaded", uploaderr)
+		}
+
+		err = c.Redis.SetArtifacts(ctx, run.Name, artifacts)
+		if err != nil {
+			return err
+		}
+
+		return uploaderr
 	}
 
-	err = c.Redis.SetArtifacts(ctx, run.Name, artifacts)
-	if err != nil {
-		return err
-	}
-
-	return uploaderr
+	return nil
 }
 
 func (c *Controller) Run(ctx context.Context, runID string) (*types.Run, error) {
