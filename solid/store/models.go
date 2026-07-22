@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -384,6 +385,42 @@ func (r *RedisStore) UpdateRegistryBenchmarkGpuPassthrough(ctx context.Context, 
 		"BenchmarkGpuPassthrough", strconv.FormatBool(pass)).Result()
 	if err != nil {
 		return fmt.Errorf("could not set BenchmarkGpuPassthrough: %w", err)
+	}
+
+	return nil
+}
+
+// BackfillModelRegistriesIndex adds every registry that already exists in the store
+// (identified by its "info:registry:<name>" key, which is written unconditionally
+// on creation) to the ModelRegistriesKey index. It exists to migrate registries
+// created before that index existed, and is idempotent: SAdd on an already-indexed
+// name is a no-op, so it is safe to run on every startup.
+func (r *RedisStore) BackfillModelRegistriesIndex(ctx context.Context) error {
+	infoKeys, err := r.scanKeys(ctx, fmt.Sprintf(ModelRegistryInfoKeyPattern, "*"))
+	if err != nil {
+		return fmt.Errorf("could not scan registry info keys: %w", err)
+	}
+
+	if len(infoKeys) == 0 {
+		return nil
+	}
+
+	prefix := fmt.Sprintf(ModelRegistryInfoKeyPattern, "")
+
+	names := make([]any, 0, len(infoKeys))
+
+	for _, key := range infoKeys {
+		if name, ok := strings.CutPrefix(key, prefix); ok {
+			names = append(names, name)
+		}
+	}
+
+	if len(names) == 0 {
+		return nil
+	}
+
+	if err := r.Client.SAdd(ctx, ModelRegistriesKey, names...).Err(); err != nil {
+		return fmt.Errorf("could not backfill registries index: %w", err)
 	}
 
 	return nil

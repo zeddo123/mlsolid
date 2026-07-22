@@ -118,6 +118,14 @@ func (c *Controller) AddArtifacts(ctx context.Context, runID string, as []types.
 		}
 	}
 
+	if len(toUpload) == 0 {
+		return nil
+	}
+
+	if c.S3 == nil {
+		return types.NewInternalErr("object store is not configured")
+	}
+
 	artifacts, uploadErr := c.S3.UploadArtifacts(ctx, toUpload)
 
 	err := c.Redis.SetArtifacts(ctx, runID, artifacts)
