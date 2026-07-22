@@ -43,7 +43,12 @@ func (r *RedisStore) createModelRegistry(ctx context.Context, p redis.Pipeliner,
 	// Registering the registry name in the index, regardless of whether it has any
 	// model entries yet (the "registry:<name>" list key below is only created once a
 	// model entry is pushed to it).
-	p.SAdd(ctx, ModelRegistriesKey, m.Name)
+	score, err := r.Client.Incr(ctx, RegistriesCounterKey).Result()
+	if err != nil {
+		return fmt.Errorf("could not allocate registry index score: %w", err)
+	}
+
+	p.ZAddNX(ctx, ModelRegistriesKey, redis.Z{Score: float64(score), Member: m.Name})
 
 	// Setting model info under key "info:registry:<name>"
 	p.HSet(ctx, infoKey, map[string]string{
@@ -390,24 +395,24 @@ func (r *RedisStore) UpdateRegistryBenchmarkGpuPassthrough(ctx context.Context, 
 	return nil
 }
 
-// BackfillModelRegistriesIndex adds every registry that already exists in the store
-// (identified by its "info:registry:<name>" key, which is written unconditionally
-// on creation) to the ModelRegistriesKey index. It exists to migrate registries
-// created before that index existed, and is idempotent: SAdd on an already-indexed
-// name is a no-op, so it is safe to run on every startup.
+// BackfillModelRegistriesIndex ensures ModelRegistriesKey reflects every registry
+// that already exists in the store. It first migrates the index itself if it is
+// still the legacy Set representation, then adds any registry that predates the
+// index entirely (identified by its "info:registry:<name>" key, which is written
+// unconditionally on creation). It is idempotent and safe to run on every startup.
 func (r *RedisStore) BackfillModelRegistriesIndex(ctx context.Context) error {
+	if err := r.migrateSetIndexToSortedSet(ctx, ModelRegistriesKey, RegistriesCounterKey); err != nil {
+		return fmt.Errorf("could not migrate registries index: %w", err)
+	}
+
 	infoKeys, err := r.scanKeys(ctx, fmt.Sprintf(ModelRegistryInfoKeyPattern, "*"))
 	if err != nil {
 		return fmt.Errorf("could not scan registry info keys: %w", err)
 	}
 
-	if len(infoKeys) == 0 {
-		return nil
-	}
-
 	prefix := fmt.Sprintf(ModelRegistryInfoKeyPattern, "")
 
-	names := make([]any, 0, len(infoKeys))
+	names := make([]string, 0, len(infoKeys))
 
 	for _, key := range infoKeys {
 		if name, ok := strings.CutPrefix(key, prefix); ok {
@@ -415,11 +420,7 @@ func (r *RedisStore) BackfillModelRegistriesIndex(ctx context.Context) error {
 		}
 	}
 
-	if len(names) == 0 {
-		return nil
-	}
-
-	if err := r.Client.SAdd(ctx, ModelRegistriesKey, names...).Err(); err != nil {
+	if err := r.zIndexAddAll(ctx, ModelRegistriesKey, RegistriesCounterKey, names); err != nil {
 		return fmt.Errorf("could not backfill registries index: %w", err)
 	}
 
@@ -428,7 +429,7 @@ func (r *RedisStore) BackfillModelRegistriesIndex(ctx context.Context) error {
 
 // ModelRegistriesID returns a slice of all known registry ids.
 func (r *RedisStore) ModelRegistriesID(ctx context.Context) ([]string, error) {
-	names, err := r.Client.SMembers(ctx, ModelRegistriesKey).Result()
+	names, err := r.zIndexAll(ctx, ModelRegistriesKey)
 	if err != nil {
 		return nil, fmt.Errorf("could query redis keys: %w", err)
 	}
@@ -439,7 +440,7 @@ func (r *RedisStore) ModelRegistriesID(ctx context.Context) ([]string, error) {
 // ModelRegistriesIDPage returns a single page of registry ids starting at cursor.
 // A returned cursor of 0 means there are no more pages.
 func (r *RedisStore) ModelRegistriesIDPage(ctx context.Context, cursor uint64, count int64) ([]string, uint64, error) {
-	names, next, err := r.Client.SScan(ctx, ModelRegistriesKey, cursor, "", count).Result()
+	names, next, err := r.zIndexPage(ctx, ModelRegistriesKey, cursor, count)
 	if err != nil {
 		return nil, 0, fmt.Errorf("could query redis keys: %w", err)
 	}
@@ -449,7 +450,7 @@ func (r *RedisStore) ModelRegistriesIDPage(ctx context.Context, cursor uint64, c
 
 // ModelRegistries returns a slice of all known registries.
 func (r *RedisStore) ModelRegistries(ctx context.Context) ([]*types.ModelRegistry, error) {
-	names, err := r.Client.SMembers(ctx, ModelRegistriesKey).Result()
+	names, err := r.zIndexAll(ctx, ModelRegistriesKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not pull registry names: %w", err)
 	}

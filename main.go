@@ -76,10 +76,6 @@ func main() {
 		Logger: logger.NewSub(log, "store"),
 	}
 
-	if err := store.BackfillModelRegistriesIndex(context.Background()); err != nil {
-		log.Error().Err(err).Msg("could not backfill model registries index")
-	}
-
 	controller := controllers.Controller{
 		Redis:              store,
 		S3:                 objectStore,

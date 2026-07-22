@@ -46,11 +46,16 @@ const (
 	// registry:yolov12 maps to a list of model entries
 	ModelRegistryKeyPattern = "registry:%s"
 
-	// ModelRegistriesKey is an index (Set) of all known registry names. Populated on
-	// registry creation regardless of whether it has any model entries yet, since a
-	// registry's "registry:<name>" list key (ModelRegistryKeyPattern) only comes into
-	// existence once the first model entry is pushed to it.
+	// ModelRegistriesKey is a Sorted Set index of all known registry names, scored by
+	// insertion order (see RegistriesCounterKey). Populated on registry creation
+	// regardless of whether it has any model entries yet, since a registry's
+	// "registry:<name>" list key (ModelRegistryKeyPattern) only comes into existence
+	// once the first model entry is pushed to it.
 	ModelRegistriesKey = "index:registries"
+
+	// RegistriesCounterKey is an auto-incrementing counter used to assign strictly
+	// increasing scores to new entries in ModelRegistriesKey.
+	RegistriesCounterKey = "counter:registries"
 
 	// ModelRegistryTagsKeyPattern pattern a model registry's tags
 	// Example
@@ -66,8 +71,22 @@ const (
 	// form: index:registry:<registry-name>:benchs
 	ModelRegistryBenchmarksIndexPattern = "index:registry:%s:benchs"
 
-	// BenchmarksKey is an index to get all benchmarks present.
+	// BenchmarksKey is a Sorted Set index of all known benchmark ids, scored by
+	// insertion order (see BenchmarksCounterKey).
 	BenchmarksKey = "index:benchs"
+
+	// BenchmarksCounterKey is an auto-incrementing counter used to assign strictly
+	// increasing scores to new entries in BenchmarksKey.
+	BenchmarksCounterKey = "counter:benchs"
+
+	// ExpsIndexKey is a Sorted Set index of all known experiment ids, scored by
+	// insertion order (see ExpsCounterKey). Populated the first time a run is
+	// recorded under a given experiment id.
+	ExpsIndexKey = "index:exps"
+
+	// ExpsCounterKey is an auto-incrementing counter used to assign strictly
+	// increasing scores to new entries in ExpsIndexKey.
+	ExpsCounterKey = "counter:exps"
 
 	// BenchmarkKeyPattern represents the key for a benchmark.
 	BenchmarkKeyPattern = "bench:%s"
@@ -199,15 +218,107 @@ func (r *RedisStore) scanKeys(ctx context.Context, pattern string) ([]string, er
 	return keys, nil
 }
 
-// scanKeysPage returns a single page of keys matching pattern, starting at cursor.
-// A returned cursor of 0 means the scan is complete.
-func (r *RedisStore) scanKeysPage(ctx context.Context, pattern string,
-	cursor uint64, count int64,
-) ([]string, uint64, error) {
-	keys, next, err := r.Client.Scan(ctx, cursor, pattern, count).Result()
+// zIndexAdd adds member to the Sorted Set index at indexKey with a fresh, strictly
+// increasing score drawn from counterKey. It is a no-op if member is already present
+// (ZADD NX leaves its existing score untouched), so it is safe to call unconditionally
+// regardless of whether the entity is already indexed.
+func (r *RedisStore) zIndexAdd(ctx context.Context, indexKey, counterKey, member string) error {
+	score, err := r.Client.Incr(ctx, counterKey).Result()
 	if err != nil {
-		return nil, 0, types.NewInternalErr("could not retrieve keys")
+		return fmt.Errorf("could not allocate index score: %w", err)
 	}
 
-	return keys, next, nil
+	if err := r.Client.ZAddNX(ctx, indexKey, redis.Z{Score: float64(score), Member: member}).Err(); err != nil {
+		return fmt.Errorf("could not add to index: %w", err)
+	}
+
+	return nil
+}
+
+// zIndexAddAll adds every member to the Sorted Set index at indexKey via zIndexAdd.
+// Safe to call with members that are already indexed.
+func (r *RedisStore) zIndexAddAll(ctx context.Context, indexKey, counterKey string, members []string) error {
+	for _, member := range members {
+		if err := r.zIndexAdd(ctx, indexKey, counterKey, member); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// zIndexAll returns every member of the Sorted Set index at indexKey, ordered by score.
+func (r *RedisStore) zIndexAll(ctx context.Context, indexKey string) ([]string, error) {
+	members, err := r.Client.ZRange(ctx, indexKey, 0, -1).Result()
+	if err != nil {
+		return nil, fmt.Errorf("could not read index: %w", err)
+	}
+
+	return members, nil
+}
+
+// zIndexPage returns a single page of members from the Sorted Set index at indexKey,
+// ordered by score, starting strictly after cursor. A returned cursor of 0 means there
+// are no more pages. Unlike SCAN's COUNT (a hint Redis may ignore for small
+// collections), this always returns at most limit members.
+func (r *RedisStore) zIndexPage(ctx context.Context, indexKey string,
+	cursor uint64, limit int64,
+) ([]string, uint64, error) {
+	// Uses the legacy ZRANGEBYSCORE form (via ZRangeByScoreWithScores) rather than
+	// ZRANGE ... BYSCORE, since the latter's LIMIT support requires Redis 6.2+.
+	res, err := r.Client.ZRangeByScoreWithScores(ctx, indexKey, &redis.ZRangeBy{
+		Min:    fmt.Sprintf("(%d", cursor),
+		Max:    "+inf",
+		Offset: 0,
+		Count:  limit + 1,
+	}).Result()
+	if err != nil {
+		return nil, 0, fmt.Errorf("could not scan index: %w", err)
+	}
+
+	hasMore := int64(len(res)) > limit
+	if hasMore {
+		res = res[:limit]
+	}
+
+	members := make([]string, len(res))
+
+	var next uint64
+
+	for i, z := range res {
+		members[i], _ = z.Member.(string)
+	}
+
+	if hasMore {
+		next = uint64(res[len(res)-1].Score)
+	}
+
+	return members, next, nil
+}
+
+// migrateSetIndexToSortedSet converts a legacy Set-based index at key into a Sorted
+// Set scored by counterKey, preserving its members. It is a no-op if key does not
+// exist or is not a Set (e.g. it was already migrated). Intended to run once at
+// startup, before the server accepts traffic, since it is not atomic with respect to
+// concurrent writers.
+func (r *RedisStore) migrateSetIndexToSortedSet(ctx context.Context, key, counterKey string) error {
+	typ, err := r.Client.Type(ctx, key).Result()
+	if err != nil {
+		return fmt.Errorf("could not check index type: %w", err)
+	}
+
+	if typ != "set" {
+		return nil
+	}
+
+	members, err := r.Client.SMembers(ctx, key).Result()
+	if err != nil {
+		return fmt.Errorf("could not read legacy set index: %w", err)
+	}
+
+	if err := r.Client.Del(ctx, key).Err(); err != nil {
+		return fmt.Errorf("could not clear legacy set index: %w", err)
+	}
+
+	return r.zIndexAddAll(ctx, key, counterKey, members)
 }
