@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -70,38 +71,48 @@ func (r *RedisStore) ExpExists(ctx context.Context, expID string) error {
 
 // Exps returns all known experiment ids.
 func (r *RedisStore) Exps(ctx context.Context) ([]string, error) {
-	keys, err := r.scanKeys(ctx, "exp:*")
+	ids, err := r.zIndexAll(ctx, ExpsIndexKey)
 	if err != nil {
 		return nil, types.NewInternalErr("could not fetch experiments")
 	}
 
-	return parseExpIDs(keys), nil
+	return ids, nil
 }
 
 // ExpsPage returns a single page of experiment ids starting at cursor.
 // A returned cursor of 0 means there are no more pages.
 func (r *RedisStore) ExpsPage(ctx context.Context, cursor uint64, count int64) ([]string, uint64, error) {
-	keys, next, err := r.scanKeysPage(ctx, "exp:*", cursor, count)
+	ids, next, err := r.zIndexPage(ctx, ExpsIndexKey, cursor, count)
 	if err != nil {
 		return nil, 0, types.NewInternalErr("could not fetch experiments")
 	}
 
-	return parseExpIDs(keys), next, nil
+	return ids, next, nil
 }
 
-func parseExpIDs(keys []string) []string {
-	ids := make([]string, len(keys))
+// BackfillExpsIndex adds every experiment that already exists in the store
+// (identified by its "exp:<id>" key, which held the run-membership Set before
+// ExpsIndexKey existed) to ExpsIndexKey. It is idempotent and safe to run on every
+// startup.
+func (r *RedisStore) BackfillExpsIndex(ctx context.Context) error {
+	keys, err := r.scanKeys(ctx, "exp:*")
+	if err != nil {
+		return types.NewInternalErr("could not scan experiment keys")
+	}
 
-	for i, key := range keys {
-		var id string
+	ids := make([]string, 0, len(keys))
 
-		_, err := fmt.Sscanf(key, "exp:%s", &id)
-		if err == nil {
-			ids[i] = id
+	for _, key := range keys {
+		if id, ok := strings.CutPrefix(key, "exp:"); ok {
+			ids = append(ids, id)
 		}
 	}
 
-	return ids
+	if err := r.zIndexAddAll(ctx, ExpsIndexKey, ExpsCounterKey, ids); err != nil {
+		return fmt.Errorf("could not backfill experiments index: %w", err)
+	}
+
+	return nil
 }
 
 // ExpInfo pulls an experiment's info data.

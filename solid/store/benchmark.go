@@ -16,10 +16,15 @@ import (
 func (r *RedisStore) CreateBenchmark(ctx context.Context, b types.Bench) (bool, error) {
 	benchKey := r.makeBenchmarkKey(b.ID)
 
+	score, err := r.Client.Incr(ctx, BenchmarksCounterKey).Result()
+	if err != nil {
+		return false, fmt.Errorf("%w: could not allocate benchmark index score: %w", types.ErrInternal, err)
+	}
+
 	p := r.Client.Pipeline()
 
 	// add new benchmark to index
-	p.SAdd(ctx, BenchmarksKey, b.ID)
+	p.ZAddNX(ctx, BenchmarksKey, redis.Z{Score: float64(score), Member: b.ID})
 	p.HSet(ctx, benchKey, map[string]any{
 		"Name":           b.Name,
 		"Paused":         b.Paused,
@@ -33,7 +38,7 @@ func (r *RedisStore) CreateBenchmark(ctx context.Context, b types.Bench) (bool, 
 		"Timestamp":      b.Timestamp,
 	})
 
-	_, err := p.Exec(ctx)
+	_, err = p.Exec(ctx)
 	if err != nil {
 		return false, fmt.Errorf("%w: could not set benchmark: %w", types.ErrInternal, err)
 	}
@@ -336,7 +341,7 @@ func (r *RedisStore) BenchmarkRuns(ctx context.Context, benchID string) ([]*type
 
 // Benchmarks returns all known benchmarks.
 func (r *RedisStore) Benchmarks(ctx context.Context) ([]string, error) {
-	benchs, err := r.Client.SMembers(ctx, BenchmarksKey).Result()
+	benchs, err := r.zIndexAll(ctx, BenchmarksKey)
 	if err != nil {
 		return nil, fmt.Errorf("%w: could not pull benchmarks: %w", types.ErrInternal, err)
 	}
@@ -347,12 +352,23 @@ func (r *RedisStore) Benchmarks(ctx context.Context) ([]string, error) {
 // BenchmarksPage returns a single page of benchmark ids starting at cursor.
 // A returned cursor of 0 means there are no more pages.
 func (r *RedisStore) BenchmarksPage(ctx context.Context, cursor uint64, count int64) ([]string, uint64, error) {
-	ids, next, err := r.Client.SScan(ctx, BenchmarksKey, cursor, "", count).Result()
+	ids, next, err := r.zIndexPage(ctx, BenchmarksKey, cursor, count)
 	if err != nil {
 		return nil, 0, fmt.Errorf("%w: could not pull benchmarks page: %w", types.ErrInternal, err)
 	}
 
 	return ids, next, nil
+}
+
+// BackfillBenchmarksIndex migrates BenchmarksKey from its legacy Set representation
+// to a Sorted Set, if it hasn't been already. It is idempotent and safe to run on
+// every startup.
+func (r *RedisStore) BackfillBenchmarksIndex(ctx context.Context) error {
+	if err := r.migrateSetIndexToSortedSet(ctx, BenchmarksKey, BenchmarksCounterKey); err != nil {
+		return fmt.Errorf("could not migrate benchmarks index: %w", err)
+	}
+
+	return nil
 }
 
 // BenchmarkNames returns a map of benchmark id to benchmark name for the given ids.

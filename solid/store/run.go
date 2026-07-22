@@ -16,10 +16,18 @@ import (
 func (r *RedisStore) SetRun(ctx context.Context, run types.Run) error {
 	key := r.makeRunKey(run.Name)
 
+	// Allocated once up front (not inside fn) so a retry of the optimistic
+	// transaction below doesn't burn a new score on every attempt.
+	score, err := r.Client.Incr(ctx, ExpsCounterKey).Result()
+	if err != nil {
+		return fmt.Errorf("could not allocate experiment index score: %w", err)
+	}
+
 	fn := func(tx *redis.Tx) error {
 		_, err := tx.Pipelined(ctx, func(p redis.Pipeliner) error {
 			setRunHash(ctx, p, key, run)
 			addRunToExperimentIndex(ctx, p, r.makeExpKey(run.ExperimentID), run.Name)
+			p.ZAddNX(ctx, ExpsIndexKey, redis.Z{Score: float64(score), Member: run.ExperimentID})
 			r.setMetrics(ctx, p, run.Name, run.Metrics)
 
 			return nil
