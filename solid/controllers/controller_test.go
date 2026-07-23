@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -374,6 +375,14 @@ func TestActiveBenchRun(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, run.Registry, got.ActiveBenchRun.Registry)
 		assert.Equal(t, run.Version, got.ActiveBenchRun.Version)
+
+		// A self-expiring TTL bounds how long a stuck active run can survive
+		// a RemActiveBenchRun that never succeeds (crash, sustained outage).
+		ttl, err := client.HExpireTime(t.Context(),
+			fmt.Sprintf(store.BenchmarkKeyPattern, benchID), "ActiveBenchRun").Result()
+		require.NoError(t, err)
+		require.Len(t, ttl, 1)
+		assert.Greater(t, ttl[0], time.Now().Add(4*24*time.Hour).Unix())
 	})
 
 	t.Run("setting_a_new_active_run_replaces_the_previous_one", func(t *testing.T) {

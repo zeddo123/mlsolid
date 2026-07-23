@@ -12,6 +12,13 @@ import (
 	"github.com/zeddo123/mlsolid/solid/types"
 )
 
+// activeBenchRunTTL bounds how long an "ActiveBenchRun" field can survive
+// without being refreshed, so a run that never gets cleared (crashed
+// process, RemActiveBenchRun failing to reach Redis) self-heals instead of
+// showing as active forever. Set well above any expected benchmark run
+// duration.
+const activeBenchRunTTL = 5 * 24 * time.Hour
+
 // CreateBenchmark creates a new benchmark.
 func (r *RedisStore) CreateBenchmark(ctx context.Context, b types.Bench) (bool, error) {
 	benchKey := r.makeBenchmarkKey(b.ID)
@@ -357,6 +364,12 @@ func (r *RedisStore) SetActiveBenchRun(ctx context.Context, benchID string, run 
 	_, err = r.Client.HSet(ctx, key, "ActiveBenchRun", content).Result()
 	if err != nil {
 		return fmt.Errorf("%w: could not set active benchmark field of benchmark %q due to %w",
+			types.ErrInternal, benchID, err)
+	}
+
+	_, err = r.Client.HExpire(ctx, key, activeBenchRunTTL, "ActiveBenchRun").Result()
+	if err != nil {
+		return fmt.Errorf("%w: could not set expiry on active benchmark field of benchmark %q due to %w",
 			types.ErrInternal, benchID, err)
 	}
 

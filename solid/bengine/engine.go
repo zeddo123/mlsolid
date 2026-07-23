@@ -34,6 +34,8 @@ type Opts func(cfg *Config)
 // the rest of the controller's surface.
 type RunRecorder interface {
 	RecordRuns(ctx context.Context, benchID string, runs []types.BenchRun) error
+	SetActiveBenchRun(ctx context.Context, benchID string, run types.BenchRun) error
+	RemActiveBenchRun(ctx context.Context, benchID string) error
 }
 
 // Engine is a benchmark runner with docker containers.
@@ -191,10 +193,7 @@ func (e *Engine) Start(ctx context.Context) {
 				Str("tag", event.Tag).
 				Msg("received benchmark event")
 
-			err := e.ConsumeEvent(ctx, event)
-			if err != nil {
-				e.l.Error().Err(err).Msg("could not run benchmark")
-			}
+			e.handleEvent(ctx, event)
 
 		case <-ctx.Done():
 			e.l.Info().Msg("shutting down bEngine")
@@ -448,6 +447,73 @@ func (e *Engine) RecordRun(ctx context.Context, event *types.BenchEvent, start, 
 	}
 
 	return nil
+}
+
+// activeBenchRunRetries and activeBenchRunRetryBackoff bound how hard
+// handleEvent tries to keep the recorder's active run marker in sync before
+// giving up and just logging. They guard against short-lived store hiccups
+// (e.g. a transient Redis connection blip); a sustained outage still leaves
+// the marker stuck, which activeBenchRunTTL (see store.RedisStore) bounds.
+const (
+	activeBenchRunRetries      = 3
+	activeBenchRunRetryBackoff = 2 * time.Second
+)
+
+// handleEvent runs a single benchmark event, keeping the recorder's active
+// run marker in sync around it. Cleanup runs in a defer, scoped to this call,
+// so the active run marker is cleared even if ConsumeEvent panics.
+func (e *Engine) handleEvent(ctx context.Context, event *types.BenchEvent) {
+	if e.recorder != nil {
+		run := types.BenchRun{ //nolint: exhaustruct
+			Registry: event.Registry,
+			Version:  event.Version,
+			Start:    time.Now(),
+		}
+
+		err := retryWithBackoff(ctx, activeBenchRunRetries, activeBenchRunRetryBackoff, func() error {
+			return e.recorder.SetActiveBenchRun(ctx, event.BenchID, run)
+		})
+		if err != nil {
+			e.l.Error().Err(err).Msg("could not set active benchmark run")
+		} else {
+			defer func() {
+				err := retryWithBackoff(ctx, activeBenchRunRetries, activeBenchRunRetryBackoff, func() error {
+					return e.recorder.RemActiveBenchRun(ctx, event.BenchID)
+				})
+				if err != nil {
+					e.l.Error().Err(err).Msg("could not remove active benchmark run")
+				}
+			}()
+		}
+	}
+
+	if err := e.ConsumeEvent(ctx, event); err != nil {
+		e.l.Error().Err(err).Msg("could not run benchmark")
+	}
+}
+
+// retryWithBackoff calls fn until it succeeds or attempts are exhausted,
+// waiting backoff between tries. It returns early if ctx is done.
+func retryWithBackoff(ctx context.Context, attempts int, backoff time.Duration, fn func() error) error {
+	var err error
+
+	for i := range attempts {
+		if err = fn(); err == nil {
+			return nil
+		}
+
+		if i == attempts-1 {
+			break
+		}
+
+		select {
+		case <-time.After(backoff):
+		case <-ctx.Done():
+			return err
+		}
+	}
+
+	return err
 }
 
 // dockerClient returns the engine's docker client, lazily creating it on
