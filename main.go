@@ -89,7 +89,8 @@ func main() {
 	if config.EnableBEngine {
 		sub := bus.Subscribe("bengine", pubgo.WithBufferSize(BengineBufferSize))
 
-		engine := bengine.New(sub,
+		engine := bengine.New(
+			sub,
 			bengine.WithRunRecorder(&controller),
 			bengine.WithS3(objectStore),
 			bengine.WithHostSourceVolume(config.HostSourceVolume),
