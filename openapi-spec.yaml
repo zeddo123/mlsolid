@@ -1218,6 +1218,14 @@ components:
           format: date-time
           description: Creation or last update timestamp
           example: "2025-05-08T12:34:56Z"
+        activeBenchRun:
+          allOf:
+            - $ref: '#/components/schemas/BenchRun'
+          description: >-
+            The benchmark run currently in progress, if any. Zero-valued
+            (all fields empty/zero) when no run is active. Distinct from the
+            runs returned by the runs endpoint, which only lists completed
+            runs.
       required:
         - id
         - name
