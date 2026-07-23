@@ -339,7 +339,13 @@ func (r *RedisStore) BenchmarkRuns(ctx context.Context, benchID string) ([]*type
 	return runs, nil
 }
 
-// SetActiveBenchRun sets the active run of a benchmark.
+// SetActiveBenchRun records run as the benchmark run currently in progress
+// for benchID, so callers can tell which run is executing before it
+// finishes and is written via RecordRuns. It is stored in the
+// "ActiveBenchRun" field of the benchmark's hash as a JSON blob and
+// overwrites whatever active run was previously set, so only one run is
+// ever considered active per benchmark. Callers are responsible for
+// clearing it with RemActiveBenchRun once the run completes.
 func (r *RedisStore) SetActiveBenchRun(ctx context.Context, benchID string, run types.BenchRun) error {
 	key := r.makeBenchmarkKey(benchID)
 
@@ -357,7 +363,9 @@ func (r *RedisStore) SetActiveBenchRun(ctx context.Context, benchID string, run 
 	return nil
 }
 
-// RemActiveBenchRun removes the active run of a benchmark.
+// RemActiveBenchRun clears the "ActiveBenchRun" field set by
+// SetActiveBenchRun, e.g. once a run has finished and been recorded. It is
+// a no-op, not an error, when no active run is set.
 func (r *RedisStore) RemActiveBenchRun(ctx context.Context, benchID string) error {
 	_, err := r.Client.HDel(ctx, r.makeBenchmarkKey(benchID), "ActiveBenchRun").Result()
 	if err != nil {
@@ -530,6 +538,8 @@ func parseBenchmark(benchID string, data, metrics *redis.MapStringStringCmd,
 
 	var benchRun types.BenchRun
 
+	// "ActiveBenchRun" is absent for the common case of a benchmark with no
+	// run in progress, so only attempt to parse it when present.
 	if run, ok := mapping["ActiveBenchRun"]; ok && run != "" {
 		err = json.Unmarshal([]byte(mapping["ActiveBenchRun"]), &benchRun)
 		if err != nil {

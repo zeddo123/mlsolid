@@ -121,7 +121,11 @@ func (c *Controller) RecordRuns(ctx context.Context, benchID string, runs []type
 	return nil
 }
 
-// SetActiveBenchRun marks a benchmark run as the currently running one.
+// SetActiveBenchRun marks run as the one currently executing for benchID, so
+// that Benchmark's ActiveBenchRun field reflects it before the run finishes
+// and is persisted via RecordRuns. Setting a new active run replaces any
+// previous one. Callers should follow up with RemActiveBenchRun once the
+// run completes, whether it succeeded or failed.
 func (c *Controller) SetActiveBenchRun(ctx context.Context, benchID string, run types.BenchRun) error {
 	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {
@@ -139,7 +143,9 @@ func (c *Controller) SetActiveBenchRun(ctx context.Context, benchID string, run 
 	return nil
 }
 
-// RemActiveBenchRun clears the currently running benchmark run, if any.
+// RemActiveBenchRun clears the run marked as currently executing for
+// benchID by SetActiveBenchRun. It succeeds without error when no run is
+// active, so it is safe to call unconditionally once a run finishes.
 func (c *Controller) RemActiveBenchRun(ctx context.Context, benchID string) error {
 	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
 	if err != nil {

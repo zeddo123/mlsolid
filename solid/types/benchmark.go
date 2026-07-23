@@ -24,7 +24,12 @@ type Bench struct {
 	DatasetURL     string        `json:"datasetUrl"     validate:"required,url"`
 	FromS3         bool          `json:"fromS3"`
 	Timestamp      time.Time     `json:"timestamp"      validate:"required"`
-	ActiveBenchRun BenchRun      `json:"activeBenchRun"`
+	// ActiveBenchRun is the run currently in flight for this benchmark, if
+	// any. It is distinct from the runs returned by BenchmarkRuns: it tracks
+	// a run that has started but not yet been recorded, and is the zero
+	// value (BenchRun{}) once no run is active. See
+	// RedisStore.SetActiveBenchRun and RedisStore.RemActiveBenchRun.
+	ActiveBenchRun BenchRun `json:"activeBenchRun"`
 }
 
 // BenchMetric represents a benchmark metric.
