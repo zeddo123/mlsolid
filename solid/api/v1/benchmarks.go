@@ -3,6 +3,7 @@ package v1
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/zeddo123/mlsolid/solid/types"
@@ -183,10 +184,10 @@ func benchmarkBest(c *fiber.Ctx) error {
 
 	var metrics []string
 
-	if err := c.BodyParser(&metrics); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{ //nolint: wrapcheck
-			Error: err.Error(),
-		})
+	for _, m := range strings.Split(c.Query("metrics"), ",") {
+		if trimmed := strings.TrimSpace(m); trimmed != "" {
+			metrics = append(metrics, trimmed)
+		}
 	}
 
 	runs, err := ctrl.BestRuns(c.Context(), id, metrics...)
@@ -196,8 +197,8 @@ func benchmarkBest(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{ //nolint: wrapcheck
-		"runs":    runs,
-		"details": "best models retrieved successfully",
+	return c.Status(fiber.StatusOK).JSON(BenchmarkBestResponse{ //nolint: wrapcheck
+		Runs:    runs,
+		Details: "best models retrieved successfully",
 	})
 }

@@ -564,6 +564,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: paused
+          in: query
+          description: desired paused state
+          required: true
+          schema:
+            type: boolean
       responses:
         '200':
           description: benchmark toggled
@@ -676,12 +682,12 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BestBenchmarkRequest'
+        - name: metrics
+          in: query
+          description: comma-separated list of metric names to compare
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: best benchmark retrieved successfully
@@ -794,12 +800,6 @@ components:
         decisionMetric:
           type: string
           description: Update the decision metric
-
-    BestBenchmarkRequest:
-      description: benchmark metrics
-      type: array
-      items:
-        type: string
 
     ExperimentsResponse:
       type: object
@@ -1078,10 +1078,9 @@ components:
           type: string
         runs:
           type: object
+          description: Map of metric name to the best run for that metric.
           additionalProperties:
-            type: array
-            items:
-              $ref: '#/components/schemas/BenchRun'
+            $ref: '#/components/schemas/BenchRun'
 
     KeyLabelsResponse:
       type: object
