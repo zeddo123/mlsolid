@@ -339,6 +339,34 @@ func (r *RedisStore) BenchmarkRuns(ctx context.Context, benchID string) ([]*type
 	return runs, nil
 }
 
+// SetActiveBenchRun sets the active run of a benchmark.
+func (r *RedisStore) SetActiveBenchRun(ctx context.Context, benchID string, run types.BenchRun) error {
+	key := r.makeBenchmarkKey(benchID)
+
+	content, err := json.Marshal(run)
+	if err != nil {
+		return fmt.Errorf("%w: could not marshal benchmark run due to %w", types.ErrInternal, err)
+	}
+
+	_, err = r.Client.HSet(ctx, key, "ActiveBenchRun", content).Result()
+	if err != nil {
+		return fmt.Errorf("%w: could not set active benchmark field of benchmark %q due to %w",
+			types.ErrInternal, benchID, err)
+	}
+
+	return nil
+}
+
+// RemActiveBenchRun removes the active run of a benchmark.
+func (r *RedisStore) RemActiveBenchRun(ctx context.Context, benchID string) error {
+	_, err := r.Client.HDel(ctx, r.makeBenchmarkKey(benchID), "ActiveBenchRun").Result()
+	if err != nil {
+		return fmt.Errorf("%w: could not delete active benchmark run field due to %w", types.ErrInternal, err)
+	}
+
+	return nil
+}
+
 // Benchmarks returns all known benchmarks.
 func (r *RedisStore) Benchmarks(ctx context.Context) ([]string, error) {
 	benchs, err := r.zIndexAll(ctx, BenchmarksKey)
@@ -500,6 +528,15 @@ func parseBenchmark(benchID string, data, metrics *redis.MapStringStringCmd,
 		return nil, fmt.Errorf("could not parse benchmark metrics: %w", err)
 	}
 
+	var benchRun types.BenchRun
+
+	if run, ok := mapping["ActiveBenchRun"]; ok && run != "" {
+		err = json.Unmarshal([]byte(mapping["ActiveBenchRun"]), &benchRun)
+		if err != nil {
+			log.Printf("could not parse active benchmark run Run=%s err=%s\n", mapping["ActiveBenchRun"], err)
+		}
+	}
+
 	return &types.Bench{
 		ID:             benchID,
 		Name:           mapping["Name"],
@@ -514,6 +551,7 @@ func parseBenchmark(benchID string, data, metrics *redis.MapStringStringCmd,
 		Timestamp:      timestamp,
 		Registries:     regs,
 		Metrics:        mets,
+		ActiveBenchRun: benchRun,
 	}, nil
 }
 
