@@ -342,6 +342,101 @@ func TestRecordRuns(t *testing.T) {
 	})
 }
 
+func TestActiveBenchRun(t *testing.T) {
+	t.Parallel()
+
+	controller := controllers.Controller{Redis: store.RedisStore{Client: *client}, S3: objectStore}
+
+	bench := types.Bench{ //nolint: exhaustruct
+		Name:        "active-bench-run-bench",
+		Registries:  []string{"dummy-registry"},
+		Metrics:     []types.BenchMetric{{Name: "mae"}},
+		DatasetName: "dummy-dataset",
+		DatasetURL:  "https://example.com/dataset.zip",
+		Timestamp:   time.Now(),
+	}
+
+	benchID, created, err := controller.CreateBenchmark(t.Context(), bench)
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	t.Run("setting_an_active_run_makes_it_visible_on_the_benchmark", func(t *testing.T) {
+		run := types.BenchRun{
+			Registry: "dummy-registry", Version: 1,
+			Metrics: map[string]float32{"mae": 92.0}, Timestamp: time.Now(),
+			Start: time.Now(), End: time.Time{},
+		}
+
+		err := controller.SetActiveBenchRun(t.Context(), benchID, run)
+		require.NoError(t, err)
+
+		got, err := controller.Benchmark(t.Context(), benchID)
+		require.NoError(t, err)
+		assert.Equal(t, run.Registry, got.ActiveBenchRun.Registry)
+		assert.Equal(t, run.Version, got.ActiveBenchRun.Version)
+	})
+
+	t.Run("setting_a_new_active_run_replaces_the_previous_one", func(t *testing.T) {
+		err := controller.SetActiveBenchRun(t.Context(), benchID, types.BenchRun{ //nolint: exhaustruct
+			Registry: "dummy-registry", Version: 1,
+		})
+		require.NoError(t, err)
+
+		err = controller.SetActiveBenchRun(t.Context(), benchID, types.BenchRun{ //nolint: exhaustruct
+			Registry: "dummy-registry", Version: 2,
+		})
+		require.NoError(t, err)
+
+		got, err := controller.Benchmark(t.Context(), benchID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), got.ActiveBenchRun.Version)
+	})
+
+	t.Run("removing_the_active_run_clears_it_from_the_benchmark", func(t *testing.T) {
+		err := controller.SetActiveBenchRun(t.Context(), benchID, types.BenchRun{ //nolint: exhaustruct
+			Registry: "dummy-registry", Version: 3,
+		})
+		require.NoError(t, err)
+
+		err = controller.RemActiveBenchRun(t.Context(), benchID)
+		require.NoError(t, err)
+
+		got, err := controller.Benchmark(t.Context(), benchID)
+		require.NoError(t, err)
+		assert.Zero(t, got.ActiveBenchRun)
+	})
+
+	t.Run("removing_an_active_run_that_was_never_set_is_a_no-op", func(t *testing.T) {
+		noRunBenchID, created, err := controller.CreateBenchmark(t.Context(), types.Bench{ //nolint: exhaustruct
+			Name:        "no-active-run-bench",
+			Registries:  []string{"dummy-registry"},
+			Metrics:     []types.BenchMetric{{Name: "mae"}},
+			DatasetName: "dummy-dataset",
+			DatasetURL:  "https://example.com/dataset.zip",
+			Timestamp:   time.Now(),
+		})
+		require.NoError(t, err)
+		require.True(t, created)
+
+		err = controller.RemActiveBenchRun(t.Context(), noRunBenchID)
+		require.NoError(t, err)
+	})
+
+	t.Run("setting_an_active_run_for_an_unknown_benchmark_returns_not_found", func(t *testing.T) {
+		err := controller.SetActiveBenchRun(t.Context(), "unknown-benchmark-id", types.BenchRun{ //nolint: exhaustruct
+			Registry: "dummy-registry", Version: 1,
+		})
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, types.ErrNotFound))
+	})
+
+	t.Run("removing_an_active_run_for_an_unknown_benchmark_returns_not_found", func(t *testing.T) {
+		err := controller.RemActiveBenchRun(t.Context(), "unknown-benchmark-id")
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, types.ErrNotFound))
+	})
+}
+
 func TestExpInfo(t *testing.T) {
 	t.Run("add_description_to_exp", func(t *testing.T) {
 		t.Parallel()

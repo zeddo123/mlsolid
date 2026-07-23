@@ -121,6 +121,42 @@ func (c *Controller) RecordRuns(ctx context.Context, benchID string, runs []type
 	return nil
 }
 
+// SetActiveBenchRun marks a benchmark run as the currently running one.
+func (c *Controller) SetActiveBenchRun(ctx context.Context, benchID string, run types.BenchRun) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
+	if err != nil {
+		return fmt.Errorf("%w: checking if benchmark is present failed: %w", types.ErrInternal, err)
+	}
+
+	if !exists {
+		return fmt.Errorf("%w: benchmark does not exist", types.ErrNotFound)
+	}
+
+	if err := c.Redis.SetActiveBenchRun(ctx, benchID, run); err != nil {
+		return fmt.Errorf("%w: could not set active benchmark run: %w", types.ErrInternal, err)
+	}
+
+	return nil
+}
+
+// RemActiveBenchRun clears the currently running benchmark run, if any.
+func (c *Controller) RemActiveBenchRun(ctx context.Context, benchID string) error {
+	exists, err := c.Redis.BenchmarkExists(ctx, benchID)
+	if err != nil {
+		return fmt.Errorf("%w: checking if benchmark is present failed: %w", types.ErrInternal, err)
+	}
+
+	if !exists {
+		return fmt.Errorf("%w: benchmark does not exist", types.ErrNotFound)
+	}
+
+	if err := c.Redis.RemActiveBenchRun(ctx, benchID); err != nil {
+		return fmt.Errorf("%w: could not remove active benchmark run: %w", types.ErrInternal, err)
+	}
+
+	return nil
+}
+
 // Benchmarks pulls all known benchmark ids.
 func (c *Controller) Benchmarks(ctx context.Context) ([]string, error) {
 	benchs, err := c.Redis.Benchmarks(ctx)

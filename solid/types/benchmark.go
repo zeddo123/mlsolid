@@ -24,6 +24,7 @@ type Bench struct {
 	DatasetURL     string        `json:"datasetUrl"     validate:"required,url"`
 	FromS3         bool          `json:"fromS3"`
 	Timestamp      time.Time     `json:"timestamp"      validate:"required"`
+	ActiveBenchRun BenchRun      `json:"activeBenchRun"`
 }
 
 // BenchMetric represents a benchmark metric.
