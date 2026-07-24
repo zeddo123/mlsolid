@@ -95,6 +95,7 @@ func main() {
 			bengine.WithS3(objectStore),
 			bengine.WithHostSourceVolume(config.HostSourceVolume),
 			bengine.WithRegistryCreds(config.DockerRegistryUsername, config.DockerRegistryPassword),
+			bengine.WithRootDest(config.BEngineRootDest),
 		)
 
 		go engine.Start(context.Background())

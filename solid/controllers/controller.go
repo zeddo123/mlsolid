@@ -20,6 +20,8 @@ type Controller struct {
 }
 
 func (c *Controller) pushBengineEvent(ctx context.Context, registryName string, version int) {
+	c.Logger.Info().Str("registry", registryName).Int("version", version).Msg("pushing Bengine event")
+
 	registry, err := c.Redis.ModelRegistry(ctx, registryName)
 	if err != nil {
 		c.Logger.Error().Err(err).Msg("could not pull registry from db")
@@ -53,6 +55,7 @@ func (c *Controller) pushBengineEvent(ctx context.Context, registryName string, 
 			Str("registry", registryName).
 			Int("version", version).
 			Str("benchID", bench.ID).
+			Str("container-image", registry.BenchmarkImage).
 			Msg("publishing benchmark event")
 
 		err = c.Bus.Publish("bengine", types.BenchEvent{

@@ -100,6 +100,11 @@ func (b *Bench) Validate() error {
 func (b *Bench) Sanitize() {
 	b.Name = SanitizeName(b.Name)
 	b.DatasetName = strings.TrimSpace(b.DatasetName)
+	b.Registries = SanitizeNames(b.Registries)
+
+	for i, m := range b.Metrics {
+		b.Metrics[i].Name = SanitizeName(m.Name)
+	}
 }
 
 // BenchMetrics returns the names of metrics tracked.
