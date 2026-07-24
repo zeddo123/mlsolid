@@ -35,6 +35,8 @@ func (c *Controller) CreateModelRegistry(ctx context.Context,
 
 // LastModelEntry returns the last model entry in the model registry.
 func (c *Controller) LastModelEntry(ctx context.Context, registryName string) (types.ModelEntry, error) {
+	registryName = types.SanitizeName(registryName)
+
 	entry, err := c.Redis.LastModel(ctx, registryName)
 	if err != nil {
 		return types.ModelEntry{}, fmt.Errorf("failed getting last model of %q: %w", registryName, err)
@@ -45,6 +47,8 @@ func (c *Controller) LastModelEntry(ctx context.Context, registryName string) (t
 
 // TaggedModel returns the latest model entry with the specified tag.
 func (c *Controller) TaggedModel(ctx context.Context, registryName string, tag string) (types.ModelEntry, error) {
+	registryName = types.SanitizeName(registryName)
+
 	entry, err := c.Redis.ModelByTag(ctx, registryName, tag)
 	if err != nil {
 		return types.ModelEntry{}, fmt.Errorf("failed getting latest enty with %q model from %q: %w", tag, registryName, err)
@@ -68,7 +72,7 @@ func (c *Controller) AddModelEntry(ctx context.Context, registryName string, url
 	}
 
 	if c.PublishBenchEvents {
-		go c.pushBengineEvent(ctx, registryName, registry.LatestVersion())
+		go c.pushBengineEvent(context.Background(), registryName, registry.LatestVersion())
 	}
 
 	return nil
@@ -96,7 +100,7 @@ func (c *Controller) AddArtifactToRegistry(ctx context.Context, registryName str
 	}
 
 	if c.PublishBenchEvents {
-		go c.pushBengineEvent(ctx, registryName, registry.LatestVersion())
+		go c.pushBengineEvent(context.Background(), registryName, registry.LatestVersion())
 	}
 
 	return nil
@@ -147,7 +151,7 @@ func (c *Controller) ModelRegistriesIDPage(ctx context.Context, cursor uint64, l
 
 // UpdateRegistryDockerImage updates the docker image of a registry.
 func (c *Controller) UpdateRegistryDockerImage(ctx context.Context, registry, dockerImage string) error {
-	err := c.Redis.UpdateRegistryDockerImage(ctx, registry, dockerImage)
+	err := c.Redis.UpdateRegistryDockerImage(ctx, types.SanitizeName(registry), dockerImage)
 	if err != nil {
 		return fmt.Errorf("update failed: %w", err)
 	}
@@ -156,7 +160,7 @@ func (c *Controller) UpdateRegistryDockerImage(ctx context.Context, registry, do
 }
 
 func (c *Controller) UpdateRegistryBenchmarkGpuPassthrough(ctx context.Context, registry string, pass bool) error {
-	err := c.Redis.UpdateRegistryBenchmarkGpuPassthrough(ctx, registry, pass)
+	err := c.Redis.UpdateRegistryBenchmarkGpuPassthrough(ctx, types.SanitizeName(registry), pass)
 	if err != nil {
 		return fmt.Errorf("update failed: %w", err)
 	}

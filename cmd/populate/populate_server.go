@@ -47,6 +47,7 @@ func main() {
 			log.Println("[populate] getting experiments... ", resp.GetExpIds())
 
 			createModelRegistry(client, "Yolo Prod") //nolint: contextcheck
+			createBenchmark(client, "Yolo Prod")     //nolint: contextcheck
 
 			maxExps := 3
 			maxRuns := 12

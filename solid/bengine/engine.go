@@ -171,12 +171,16 @@ func (e *Engine) Start(ctx context.Context) {
 	for {
 		select {
 		case msg, ok := <-e.sub.Msgs:
+			e.l.Info().Msg("got message event")
+
 			if !ok {
 				return
 			}
 
-			event, ok := msg.(*types.BenchEvent)
+			event, ok := msg.(types.BenchEvent)
 			if !ok {
+				e.l.Error().Any("event", msg).Msg("could not cast msg event to types.BenchEvent")
+
 				break
 			}
 
@@ -193,7 +197,7 @@ func (e *Engine) Start(ctx context.Context) {
 				Str("tag", event.Tag).
 				Msg("received benchmark event")
 
-			e.handleEvent(ctx, event)
+			e.handleEvent(ctx, &event)
 
 		case <-ctx.Done():
 			e.l.Info().Msg("shutting down bEngine")
@@ -323,7 +327,7 @@ func (e *Engine) RunContainer(
 		Msg("starting container")
 
 	source := e.rootDest
-	target := e.rootDest
+	target := "/mlsolid"
 
 	if e.hostSourceVolume != "" {
 		source = e.hostSourceVolume
@@ -334,8 +338,8 @@ func (e *Engine) RunContainer(
 		ctr.WithImage(image),
 		ctr.WithCmd([]string{
 			"-dn", datasetName,
-			"-d", datasetPath,
-			"-m", checkpointPath,
+			"-d", filepath.Join(target, "datasets", datasetName),
+			"-m", filepath.Join(target, "checkpoints", "model.pth"),
 			"-o", outputPath,
 		}...),
 		ctr.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
