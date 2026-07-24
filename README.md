@@ -19,6 +19,9 @@ A solid & sane MLOps platform. It makes it possible to **R&D**, **benchmark**, a
 
 </div>
 
+[ScreencastFrom2026-07-2404-51-46-ezgif.com-video-compressor.webm](https://github.com/user-attachments/assets/07390657-16a6-41b9-8a32-261b3e19d705)
+
+
 # 🔬 mlsolid
 
 mlsolid is a solid alternative to MLflow, written in Go, with Redis as its metadata backend and any S3-compatible bucket as its artifact store.
