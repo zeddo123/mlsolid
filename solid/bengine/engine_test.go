@@ -65,7 +65,7 @@ func TestEngineRun(t *testing.T) {
 
 	require.NotNil(t, e)
 
-	event := &types.BenchEvent{ //nolint: exhaustruct
+	event := types.BenchEvent{ //nolint: exhaustruct
 		BenchID:     benchID,
 		Registry:    "dummy-registry",
 		Version:     1,
