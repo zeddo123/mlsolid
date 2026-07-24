@@ -1,6 +1,8 @@
 import time
 import argparse
 import os
+import json
+import random
 
 parser = argparse.ArgumentParser('entrypoint script')
 parser.add_argument('-o', '--output', type=str, default='output.json')
@@ -22,4 +24,6 @@ else:
 
 with open(args.output, 'w') as fs:
     print(args.output)
-    fs.write('{"mae": 92.0, "loss": 0.0023}\n')
+    metrics = {"mae": random.uniform(0.0, 100.0), "loss": random.uniform(0.0, 1.0)}
+    json.dump(metrics, fs)
+    fs.write('\n')
