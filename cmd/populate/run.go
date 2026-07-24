@@ -29,6 +29,11 @@ func createRun(client mlsolidv1grpc.MlsolidServiceClient, expID string) {
 	addDescMetrics(client, resp.GetRunId(), "loss")
 	addRandMetrics(client, resp.GetRunId(), "mae")
 	addIncMetrics(client, resp.GetRunId(), "acc")
+	addNoisyDecMetrics(client, resp.GetRunId(), "val_loss")
+	addOscillatingMetrics(client, resp.GetRunId(), "lr")
+	addPlateauMetrics(client, resp.GetRunId(), "val_acc")
+	addIntMetrics(client, resp.GetRunId(), "epoch")
+	addStrMetrics(client, resp.GetRunId(), "phase")
 
 	addTxtAtrifact(client, resp.GetRunId(), "log.txt")
 	addTxtAtrifact(client, resp.GetRunId(), "data.txt")
