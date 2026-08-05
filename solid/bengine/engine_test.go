@@ -108,7 +108,7 @@ func TestRunContainerExtractsFixedMetrics(t *testing.T) {
 		bengine.WithLoggingLevel(zerolog.DebugLevel))
 
 	result, err := engine.RunContainer(t.Context(), DummyImage, "dummy-dataset",
-		datasetPath, filepath.Join(root, "checkpoints", "model.pth"))
+		datasetPath, "model.pth", filepath.Join(root, "checkpoints", "model.pth"))
 	require.NoError(t, err)
 
 	var metrics map[string]float32

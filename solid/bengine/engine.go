@@ -228,13 +228,29 @@ func (e *Engine) ConsumeEvent(ctx context.Context, event *types.BenchEvent) erro
 		}
 	}
 
-	// Load model if not present
-	checkpointPath := filepath.Join(e.rootDest, "checkpoints", "model.pth")
+	// Load model checkpoint if not present
+	var checkpointName, checkpointPath string
+
+	if event.ModelURL != "" {
+		checkpointName = path.Base(event.ModelURL)
+		checkpointPath = filepath.Join(e.rootDest, "checkpoints", checkpointName)
+
+		e.l.Info().Str("checkpointPath", checkpointPath).
+			Msg("checking if model checkpoint is already present")
+
+		if _, err := os.Stat(checkpointPath); errors.Is(err, os.ErrNotExist) {
+			if err := e.PullModel(ctx, event.ModelURL, checkpointPath); err != nil {
+				return err
+			}
+		}
+	} else {
+		e.l.Warn().Msg("no model URL on benchmark event, running container without a checkpoint")
+	}
 
 	start := time.Now()
 
 	result, err := e.RunContainer(ctx, event.DockerImage,
-		event.DatasetName, datasetPath, checkpointPath)
+		event.DatasetName, datasetPath, checkpointName, checkpointPath)
 	if err != nil {
 		return err
 	}
@@ -300,9 +316,45 @@ func (e *Engine) PullDataset(ctx context.Context, url string, outputPath string,
 	return nil
 }
 
+// PullModel pulls a model checkpoint from the configured object store to outputPath.
+func (e *Engine) PullModel(ctx context.Context, key string, outputPath string) error {
+	if e.s3 == nil {
+		return errors.New("could not pull model checkpoint: s3 store not configured")
+	}
+
+	e.l.Info().Str("key", key).Msg("Downloading model checkpoint")
+
+	content, err := e.s3.DownloadFile(ctx, key)
+	if err != nil {
+		return fmt.Errorf("could not download model checkpoint: %w", err)
+	}
+
+	defer content.Close() //nolint: errcheck
+
+	mod := 0o755
+	permission := os.FileMode(mod)
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), permission); err != nil {
+		return fmt.Errorf("could not create checkpoint directory: %w", err)
+	}
+
+	fs, err := os.Create(outputPath) //nolint: gosec
+	if err != nil {
+		return fmt.Errorf("could not create checkpoint file: %w", err)
+	}
+
+	defer fs.Close() //nolint: errcheck
+
+	if _, err := io.Copy(fs, content); err != nil {
+		return fmt.Errorf("could not write checkpoint file: %w", err)
+	}
+
+	return nil
+}
+
 // RunContainer runs a benchmark on a container with a specified image, dataset, and checkpoint.
 func (e *Engine) RunContainer(
-	ctx context.Context, image, datasetName, datasetPath, checkpointPath string,
+	ctx context.Context, image, datasetName, datasetPath, checkpointName, checkpointPath string,
 ) (string, error) {
 	outputPath := "/run/output.json"
 
@@ -333,15 +385,20 @@ func (e *Engine) RunContainer(
 		source = e.hostSourceVolume
 	}
 
+	cmd := []string{
+		"-dn", datasetName,
+		"-d", filepath.Join(target, "datasets", datasetName),
+		"-o", outputPath,
+	}
+
+	if checkpointName != "" {
+		cmd = append(cmd, "-m", filepath.Join(target, "checkpoints", checkpointName))
+	}
+
 	c, err := ctr.Run(
 		ctx,
 		ctr.WithImage(image),
-		ctr.WithCmd([]string{
-			"-dn", datasetName,
-			"-d", filepath.Join(target, "datasets", datasetName),
-			"-m", filepath.Join(target, "checkpoints", "model.pth"),
-			"-o", outputPath,
-		}...),
+		ctr.WithCmd(cmd...),
 		ctr.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			hostConfig.Mounts = []mount.Mount{
 				{Type: mount.TypeBind, Source: source, Target: target, ReadOnly: true}, //nolint: exhaustruct
